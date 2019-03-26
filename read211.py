@@ -40,7 +40,8 @@ import datetime
 import os
 import warnings
 import calendar
-import xml.etree.ElementTree as et
+import lxml.etree as et
+#import xml.etree.ElementTree as et
 from xml.dom import minidom
 
 # Known limitations:
@@ -562,12 +563,14 @@ def getlistinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
             result.append(data)
     return result
 
+
 def gettabular(worksheet, mincol, minrow, maxcol, maxrow):
     results = []
     for row in worksheet.iter_rows(min_row=minrow, min_col=mincol,
                                    max_col=maxcol, max_row=maxrow):
         results.append([el.value for el in row])
     return results
+
 
 def getcellrange(worksheet, cellrange):
     try:
@@ -576,6 +579,7 @@ def getcellrange(worksheet, cellrange):
         return None
     return gettabular(worksheet, mincol, minrow, maxcol, maxrow)
 
+
 def scanRowForEmpty(worksheet, col, row, maxcol=256):
     count = 0
     for col in worksheet.iter_cols(min_col=col, min_row=row,
@@ -583,6 +587,7 @@ def scanRowForEmpty(worksheet, col, row, maxcol=256):
         if not col[0].value:
             return count
         count += 1
+
 
 def scanForExpandableColumnTable(worksheet, mincol=1, minrow=1, maxrow=1,
                                  minentries=1):
@@ -600,6 +605,7 @@ def scanForExpandableColumnTable(worksheet, mincol=1, minrow=1, maxrow=1,
         result.append(data)
     return result
 
+
 def scanForHeaderRow(worksheet, mincol, minrow, header):
     maxcol = mincol+len(header)-1
     count = 0
@@ -611,6 +617,7 @@ def scanForHeaderRow(worksheet, mincol, minrow, header):
         count += 1
     raise ScanFailure('Failed to find header')
 
+
 def scan_for_cell_value(worksheet, mincol=None, minrow=None, maxcol=None,
                         maxrow=None, value=None):
     for row in worksheet.iter_rows(min_col=mincol, min_row=minrow,
@@ -619,6 +626,7 @@ def scan_for_cell_value(worksheet, mincol=None, minrow=None, maxcol=None,
             if el.value == value:
                 return tuple_from_coordinate(el.coordinate)
     raise ScanFailure('Failed to find cell value')
+
 
 def read_all_building(worksheet):
     '''Read the 'All - Building' sheet
@@ -677,6 +685,7 @@ def read_all_building(worksheet):
 
     return bldg_info
 
+
 def read_utility_table(worksheet, name, labels, row=1, col=1):
     # Scan for the name
     cellcol, cellrow = scan_for_cell_value(worksheet, mincol=col, minrow=row,
@@ -691,6 +700,7 @@ def read_utility_table(worksheet, name, labels, row=1, col=1):
 
     return data
 
+
 def read_utility_definition(worksheet, name, row=1, col=1):
     # Scan for the name
     cellcol, cellrow = scan_for_cell_value(worksheet, mincol=col, minrow=row,
@@ -702,6 +712,7 @@ def read_utility_definition(worksheet, name, row=1, col=1):
                                         cellcol+1, cellrow+1])
 
     return data
+
 
 def read_all_metered_energy(worksheet):
     '''Read the 'All - Metered Energy' sheet
@@ -748,7 +759,8 @@ def read_all_metered_energy(worksheet):
         data['Utility #3']['Definition'] = definition
         data['Utility #3']['Type'] = header_info['Utility #3']
     return data
-    
+
+
 def read_all_delivered_energy(worksheet):
     '''Read the 'All - Delivered Energy' sheet
 
@@ -775,6 +787,7 @@ def read_all_delivered_energy(worksheet):
     header_info['Estimated Annual Use**'] = estimated_annual_use
     return {'Definition':header_info, 'Data':delivered}
 
+
 def read_L1_eem_summary(worksheet):
     '''Read the 'L1 - EEM Summary' sheet
 
@@ -796,6 +809,7 @@ def read_L1_eem_summary(worksheet):
     return {'Low-Cost and No-Cost Recommendations' : lowcost,
             'Potential Capital Recommendations' : potentialcapital}
 
+
 def read_space_functions(worksheet):
     '''Read the 'All - Space Functions' sheet
 
@@ -815,6 +829,7 @@ def read_space_functions(worksheet):
                               inrows=False, labels=spacefunctions_labels)
     return space_functions
 
+
 def handle_key_formulas(key,IP):
     newkey = key
     if '&IF(Instructions!B18="IP","(ft2)","m2")' in key:
@@ -823,6 +838,7 @@ def handle_key_formulas(key,IP):
         newkey = newkey.replace('"','')
         newkey = newkey.strip() + unit
     return newkey
+
 
 def read_L2_envelope(worksheet,IP=True):
     '''Read the 'L2 - Envelope' sheet
@@ -894,6 +910,7 @@ def read_L2_envelope(worksheet,IP=True):
         if table:
             info[tablename] = table
     return info
+
 
 def read_L2_hvac(worksheet):
     zone_controls_table = ['Check Box 73',
@@ -1051,6 +1068,7 @@ def read_L2_hvac(worksheet):
                     info['SHW/DHW Fuel'][i] = 'Other (Unspecified)'
     return info
 
+
 def read_L2_equipment_inventory(worksheet):
     # Look for "ID" in the first column
     cellcol, cellrow = scan_for_cell_value(worksheet, mincol=1, minrow=2,
@@ -1119,6 +1137,7 @@ def read_L2_lighting(worksheet):
     return {'Lighting Source Type(s)':lighting,
             'Major Process/Plug Load Type(s)**':loads}
 
+
 def read_L2_eem_summary(worksheet):
 
     labels = ['Description', 'Energy Cost Savings', 'Non-energy Cost Savings', 'Peak Demand Savings (kW)',
@@ -1141,6 +1160,7 @@ def read_L2_eem_summary(worksheet):
 
     return {'Low-Cost and No-Cost Recommendations' : lowcost,
             'Potential Capital Recommendations' : potentialcapital}
+
 
 def read_std211_xls(workbook, IP=True):
     ''' Read Standard 211 information from an Excel workbook into a dictionary '''
@@ -1169,6 +1189,7 @@ def read_std211_xls(workbook, IP=True):
     # Done!
     return std211
 
+
 def process_zip(pc):
     separators = ['-', ' ']
     for sep in separators:
@@ -1179,7 +1200,8 @@ def process_zip(pc):
             continue
         # Check for numbers?
         return five,four
-    return pc,None
+    return pc, None
+
 
 def determine_frequency(start,end):
     frequency = 'Other'
@@ -1296,6 +1318,7 @@ def determine_frequency(start,end):
                 pass
     return frequency
 
+
 def bsxml_lighting_system_lookup(src_type):
     lamp_type = et.Element('LampType')
     if src_type == 'CFL':
@@ -1336,6 +1359,7 @@ def bsxml_lighting_system_lookup(src_type):
         et.SubElement(lamp_type, 'Unknown')
     return lamp_type
 
+
 def bsxml_lighting_control_lookup(control_type):
     control = None
     if control_type == 'Manual':
@@ -1354,11 +1378,11 @@ def bsxml_lighting_control_lookup(control_type):
     #elif control_type == 'Advanced':
     #elif control_type == 'Other':
     return control
-    
 
 
 def prettystring(element):
     return minidom.parseString(et.tostring(element, encoding='utf-8')).toprettyxml(indent='\t', encoding='utf-8')
+
 
 def easymap(dictionary, inkey, outkey, parent, f=lambda x: x):
     if inkey in dictionary:
@@ -1366,15 +1390,18 @@ def easymap(dictionary, inkey, outkey, parent, f=lambda x: x):
             el = et.SubElement(parent, outkey)
             el.text = f(dictionary[inkey])
 
+
 def easyremap(dictionary, inkey, outkey, parent, remap, f=lambda x: x):
     if inkey in dictionary:
         if dictionary[inkey]:
             el = et.SubElement(parent, outkey)
             el.text = f(remap[dictionary[inkey]])
 
+
 def addel(outkey, parent, value):
     el = et.SubElement(parent, outkey)
-    el.text = value
+    el.text = str(value)
+
 
 def addudf(parent, key, value, create=True):
     udfs = parent.find('UserDefinedFields')
@@ -1388,6 +1415,7 @@ def addudf(parent, key, value, create=True):
     el = et.SubElement(udf, 'FieldValue')
     el.text = value
 
+
 def appendudf(udfs, key, dictionary, prefix=None):
     if key in dictionary:
         udf = et.SubElement(udfs, 'UserDefinedField')
@@ -1399,21 +1427,26 @@ def appendudf(udfs, key, dictionary, prefix=None):
         el = et.SubElement(udf, 'FieldValue')
         el.text = str(dictionary[key])
 
+
 def easymapudf(dictionary, inkey, outkey, parent, f=lambda x: x):
     if inkey in dictionary and dictionary[inkey]:
         addudf(parent, outkey, f(dictionary[inkey]))
 
+
 def yn2tf(s):
     return {'Y':'true', 'N':'false'}[s]
 
+
 def repercentage(s):
     return str(s*100)+'%'
+
 
 def bsxml_condition_lookup(condition):
     return {'excellent': 'Excellent',
             'good': 'Good',
             'average': 'Average',
             'poor': 'Poor'}.get(condition.lower(), 'Other')
+
 
 def bsxml_capacity_units_lookup(units):
     return {"cfh": "cfh",
@@ -1441,6 +1474,7 @@ def bsxml_capacity_units_lookup(units):
             "cooling tons": "Cooling ton",
             "tons": "Cooling ton",
             "ton": "Cooling ton"}.get(units.lower(), 'Other')
+
 
 def map_equipment_inventory(inventory):
     hvacsystems = []
@@ -2339,10 +2373,15 @@ def map_to_buildingsync(obj, groupspaces=False):
     #
     # Assemble the final result
     #
-    bsxml = et.Element('Audits')
-    bsxml.attrib['xmlns'] = "http://nrel.gov/schemas/bedes-auc/2014"
-    bsxml.attrib['xmlns:xsi'] = "http://www.w3.org/2001/XMLSchema-instance"
-    bsxml.attrib['xsi:schemaLocation'] = "http://nrel.gov/schemas/bedes-auc/2014 ../BuildingSync.xsd"
+    nss = {
+        'xmlns' : "http://nrel.gov/schemas/bedes-auc/2014",
+        #'xmlns:xsi' : "http://www.w3.org/2001/XMLSchema-instance",
+        #'xsi:schemaLocation' : "http://nrel.gov/schemas/bedes-auc/2014 ../BuildingSync.xsd"
+    }
+    bsxml = et.Element('Audits', nsmap=nss)
+    #bsxml.attrib['xmlns'] = "http://nrel.gov/schemas/bedes-auc/2014"
+    #bsxml.attrib['xmlns:xsi'] = "http://www.w3.org/2001/XMLSchema-instance"
+    #bsxml.attrib['xsi:schemaLocation'] = "http://nrel.gov/schemas/bedes-auc/2014 ../BuildingSync.xsd"
     audit = et.SubElement(bsxml, 'Audit')
     # First is Sites
     if address or keycontact or facilities:
@@ -2392,6 +2431,7 @@ def map_to_buildingsync(obj, groupspaces=False):
     # Done!  
     return bsxml
 
+
 def map_std211_xls_to_string(filename, verbose=False, groupspaces=False):
     if not os.path.exists(filename):
         raise Exception('File "%s" does not exist' % filename)
@@ -2404,6 +2444,7 @@ def map_std211_xls_to_string(filename, verbose=False, groupspaces=False):
     std211 = read_std211_xls(wb)
     bsxml = map_to_buildingsync(std211, groupspaces=groupspaces)
     return '<?xml version="1.0" encoding="UTF-8"?>' + et.tostring(bsxml, encoding='utf-8').decode('utf-8')
+
 
 def map_std211_xls_to_prettystring(filename, verbose=False, groupspaces=False):
     if not os.path.exists(filename):
