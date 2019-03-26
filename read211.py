@@ -242,19 +242,23 @@ L2_equipment_inventory_system_types = ['Heating Plant Type',
 
 
 def tuple_from_coordinate(coordinate):
-    coord = openpyxl.utils.coordinate_from_string(coordinate)
-    col = openpyxl.utils.column_index_from_string(coord[0])
+    coord = openpyxl.utils.cell.coordinate_from_string(coordinate)
+    col = openpyxl.utils.cell.column_index_from_string(coord[0])
     row = coord[1]
-    return (col, row)
+    return col, row
+
 
 class ScanFailure(Exception):
     pass
 
+
 class LabelMismatch(Exception):
     pass
 
+
 class MissingRequired(Exception):
     pass
+
 
 def cellrange(worksheet, mincol=None, minrow=None, maxcol=None, maxrow=None):
     if minrow == maxrow:
@@ -270,6 +274,7 @@ def cellrange(worksheet, mincol=None, minrow=None, maxcol=None, maxrow=None):
                                    max_col=maxcol, max_row=maxrow):
         results.append([el.value for el in row])
     return results
+
 
 def getlabeledvalues(worksheet, cellrange, labelcolor=0, IP=True,
                      valuecolor=8, variablelength=False, hasunits=False):
@@ -324,6 +329,7 @@ def getlabeledvalues(worksheet, cellrange, labelcolor=0, IP=True,
                     result[row[0].value] = row[-2].value
     return result
 
+
 def getlist(worksheet, cellrange, variablelength=False, fillcolor=8):
     if isinstance(cellrange, str):
         try:
@@ -355,6 +361,7 @@ def getlist(worksheet, cellrange, variablelength=False, fillcolor=8):
                     break
             result.append(col[0])
     return result
+
 
 def getinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
             labels=None, inrows=True, keepemptyrows=False, keepemptycells=True):
@@ -420,6 +427,7 @@ def getinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
                     data = dict([el for el in zip(labels[1:],data) if el[1] != None])
             result[col[0].value] = data
     return result
+
 
 def gettable(worksheet, cellrange, variablelength=False, fillcolor=8,
              labels=None, inrows=True, keepempty=False):
