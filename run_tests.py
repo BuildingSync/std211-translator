@@ -33,6 +33,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import unittest
 import read211
 import loadxl
 import warnings
@@ -54,16 +55,27 @@ schema = etree.XMLSchema(tree)
 
 legit = etree.parse('../bsxml/examples/Golden Test File.xml')
 
-test_files = ['examples/std211_example.xlsx']
-
-for file in test_files:
-    warnings.simplefilter("ignore")
-    wb = loadxl.load_workbook(file)
-    std211 = read211.read_std211_xls(wb)
-    bsxml = read211.map_to_buildingsync(std211, groupspaces=True)
+def validate(filename, schema, instance):
     try:
-        schema.assertValid(bsxml)
+        schema.assertValid(instance)
     except etree.DocumentInvalid as exc:
-        print(exc)
-    warnings.simplefilter("default")
+        return filename + ': ' + str(exc)
+    return ''
+
+class TestStd211Translation(unittest.TestCase):
+    def test_files(self):
+        test_files = ['examples/std211_example.xlsx']
+        warnings.simplefilter("ignore")
+        for file in test_files:
+            wb = loadxl.load_workbook(file)
+            std211 = read211.read_std211_xls(wb)
+            bsxml = read211.map_to_buildingsync(std211, groupspaces=True)
+            #self.assertTrue(schema.validate(bsxml))
+            self.assertEqual(validate(file, schema, bsxml), '')
+        warnings.simplefilter("default")
+    def test_legit(self):
+        self.assertTrue(schema.validate(legit))
+
+if __name__ == '__main__':
+    unittest.main()
 
