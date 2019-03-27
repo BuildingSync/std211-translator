@@ -1161,7 +1161,7 @@ def read_L2_eem_summary(worksheet):
             'Potential Capital Recommendations': potentialcapital}
 
 
-def read_std211_xls(workbook, IP=True):
+def read_std211_xlsx(workbook, IP=True):
     ''' Read Standard 211 information from an Excel workbook into a dictionary '''
     std211 = {}
     #
@@ -1380,7 +1380,7 @@ def bsxml_lighting_control_lookup(control_type):
 
 
 def prettystring(element):
-    return minidom.parseString(et.tostring(element, encoding='utf-8')).toprettyxml(indent='\t', encoding='utf-8')
+    return minidom.parseString(et.tostring(element, encoding='utf-8')).toprettyxml(indent='  ', encoding='utf-8')
 
 
 def easymap(dictionary, inkey, outkey, parent, f=lambda x: x):
@@ -1643,18 +1643,18 @@ def map_to_buildingsync(obj, groupspaces=False):
         addel('ContactName', owner, allbuilding['Building Owner'])
         addudf(owner, 'ASHRAE Standard 211 Role', 'Owner')
 
-    facilities = et.Element('Facilities')
-    facility = et.SubElement(facilities, 'Facility')
-    facility.attrib['ID'] = 'Building'
+    buildings = et.Element('Buildings')
+    building = et.SubElement(buildings, 'Building')
+    building.attrib['ID'] = 'Building'
 
-    easymap(allbuilding, 'Building Name*', 'PremisesName', facility)
-    easymap(allbuilding, 'Facility Description - Notable Conditions',
-            'PremisesNotes', facility)
+    easymap(allbuilding, 'Building Name*', 'PremisesName', building)
+    easymap(allbuilding, 'Building Description - Notable Conditions',
+            'PremisesNotes', building)
     # OccupancyClassification should go here, but it can't: the enums don't match
     if 'Occupancy' in allbuilding:
         occupancy = allbuilding['Occupancy']
         if 'Typical number of occupants (during occ hours)' in occupancy:
-            levels = et.SubElement(facility, 'OccupancyLevels')
+            levels = et.SubElement(building, 'OccupancyLevels')
             level = et.SubElement(levels, 'OccupancyLevel')
             addel('OccupantQuantity', level,
                   str(occupancy['Typical number of occupants (during occ hours)']))
@@ -1670,20 +1670,20 @@ def map_to_buildingsync(obj, groupspaces=False):
                   str(occupancy['Typical occupancy (weeks/year)']))
             addel('TypicalOccupantUsageUnits', occ, 'Weeks per year')
         if len(typicalocc) > 0:
-            facility.append(typicalocc)
+            building.append(typicalocc)
         if 'Number of Dwelling Units in Building (Multifamily Only)' in occupancy:
-            units = et.SubElement(facility, 'SpatialUnits')
+            units = et.SubElement(building, 'SpatialUnits')
             addel('SpatialUnitType', units, 'Apartment units')
             addel('NumberOfUnits', units, str(occupancy['Number of Dwelling Units in Building (Multifamily Only)']))
 
     easymap(allbuilding, 'Conditioned Floors Above grade',
-            'ConditionedFloorsAboveGrade', facility, f=str)
+            'ConditionedFloorsAboveGrade', building, f=str)
     easymap(allbuilding, 'Conditioned Floors Below grade',
-            'ConditionedFloorsBelowGrade', facility, f=str)
+            'ConditionedFloorsBelowGrade', building, f=str)
     easymap(allbuilding, 'Building automation system? (Y/N)',
-            'BuildingAutomationSystem', facility, yn2tf)
+            'BuildingAutomationSystem', building, yn2tf)
     easymap(allbuilding, 'Historical landmark status? (Y/N)',
-            'HistoricalLandmark', facility, yn2tf)
+            'HistoricalLandmark', building, yn2tf)
     # Map to FloorAreas
     floorareas = et.Element('FloorAreas')
     if 'Total conditioned area' in allbuilding:
@@ -1711,13 +1711,13 @@ def map_to_buildingsync(obj, groupspaces=False):
             addel('FloorAreaValue', floorarea, value)
 
     easymap(allbuilding, 'Year of construction*',
-            'YearOfConstruction', facility, f=str)
+            'YearOfConstruction', building, f=str)
 
     easymap(allbuilding, 'Year of Prior Energy Audit',
-            'YearOfLastEnergyAudit', facility, f=str)
+            'YearOfLastEnergyAudit', building, f=str)
 
     easymap(allbuilding, 'Last Renovation*',
-            'YearOfLastMajorRemodel', facility, f=str)
+            'YearOfLastMajorRemodel', building, f=str)
     #
     # All - Space Functions
     #
@@ -1779,7 +1779,7 @@ def map_to_buildingsync(obj, groupspaces=False):
 
     # Map the building shape if it is given
     if 'General Building Shape*' in envelope:
-        subsections = et.SubElement(facility, 'Subsections')
+        subsections = et.SubElement(building, 'Subsections')
         subsection = et.SubElement(subsections, 'Subsection')
         addel('FootprintShape', subsection, envelope['General Building Shape*'])
 
@@ -1908,7 +1908,7 @@ def map_to_buildingsync(obj, groupspaces=False):
             'Fenestration Seal Condition' in envelope):
         # Something is there to put in sides, make what we need
         if subsection is None:
-            subsections = et.SubElement(facility, 'Subsections')
+            subsections = et.SubElement(building, 'Subsections')
             subsection = et.SubElement(subsections, 'Subsection')
         sides = et.SubElement(subsection, 'Sides')
         side = et.SubElement(sides, 'Side')
@@ -2028,7 +2028,7 @@ def map_to_buildingsync(obj, groupspaces=False):
 
     if len(udfs) > 0:
         if subsection is None:
-            subsections = et.SubElement(facility, 'Subsections')
+            subsections = et.SubElement(building, 'Subsections')
             subsection = et.SubElement(subsections, 'Subsection')
         subsection.append(udfs)
 
@@ -2056,36 +2056,36 @@ def map_to_buildingsync(obj, groupspaces=False):
                 tzspaces.append(space)
     if len(thermalzones) > 0:
         if subsection is None:
-            subsections = et.SubElement(facility, 'Subsections')
+            subsections = et.SubElement(building, 'Subsections')
             subsection = et.SubElement(subsections, 'Subsection')
         subsection.append(thermalzones)
 
     # Now for the UDFs from All - Building
     easymapudf(allbuilding, 'Primary Building use type*',
-               'ASHRAE Standard 211 Primary Building Use Type', facility)
+               'ASHRAE Standard 211 Primary Building Use Type', building)
     easymapudf(allbuilding, 'Year Last Commissioned',
-               'ASHRAE Standard 211 Year Last Commissioned', facility, f=str)
+               'ASHRAE Standard 211 Year Last Commissioned', building, f=str)
     easymapudf(allbuilding, 'Percent owned (%)',
-               'ASHRAE Standard 211 Percent Owned', facility, f=repercentage)
+               'ASHRAE Standard 211 Percent Owned', building, f=repercentage)
     easymapudf(allbuilding, 'Percent leased (%)',
-               'ASHRAE Standard 211 Percent Leased', facility, f=repercentage)
+               'ASHRAE Standard 211 Percent Leased', building, f=repercentage)
     easymapudf(allbuilding, 'Total Number of Floors',
-               'ASHRAE Standard 211 Total Number of Floors', facility, f=str)
+               'ASHRAE Standard 211 Total Number of Floors', building, f=str)
     if 'Excluded Spaces' in allbuilding:
         allbuilding['Excluded Spaces'] = ', '.join(allbuilding['Excluded Spaces'])
     easymapudf(allbuilding, 'Excluded Spaces',
-               'ASHRAE Standard 211 Excluded Spaces', facility)
+               'ASHRAE Standard 211 Excluded Spaces', building)
 
     if 'Occupancy' in allbuilding:
         easymapudf(allbuilding['Occupancy'],
                    '% of Dwelling Units currently Occupied (Multifamily Only)',
                    'ASHRAE Standard 211 Percent Dwelling Units Currently Occupied',
-                   facility, f=repercentage)
+                   building, f=repercentage)
 
-    # Wrap up for facility
-    if len(facility) == 0:
-        facility = None
-        facilities = None
+    # Wrap up for building
+    if len(building) == 0:
+        building = None
+        buildings = None
 
     # Map energy sources, metered energy, and delivered energy to a report
     report = et.Element('Report')
@@ -2236,11 +2236,11 @@ def map_to_buildingsync(obj, groupspaces=False):
         for pt in datapoints:
             ts.append(pt)
 
-    if len(scenario) > 0 and (facility is not None):
+    if len(scenario) > 0 and (building is not None):
         link = et.SubElement(scenario, 'LinkedPremises')
-        el = et.SubElement(link, 'Facility')
-        el = et.SubElement(el, 'LinkedFacilityID')
-        el.attrib['IDref'] = facility.attrib['ID']
+        el = et.SubElement(link, 'Building')
+        el = et.SubElement(el, 'LinkedBuildingID')
+        el.attrib['IDref'] = building.attrib['ID']
 
     # Add the utility items
     utilities = et.Element('Utilities')
@@ -2383,34 +2383,40 @@ def map_to_buildingsync(obj, groupspaces=False):
     # Assemble the final result
     #
     attr_qname = et.QName("http://www.w3.org/2001/XMLSchema-instance", "schemaLocation")
-    nsmap = {None: "http://nrel.gov/schemas/bedes-auc/2014",
+    nsmap = {None: "http://nrel.gov/schemas/bedes-auc/2019",
              'xsi': "http://www.w3.org/2001/XMLSchema-instance"}
-    bsxml = et.Element('Audits',
-                       {attr_qname: "http://nrel.gov/schemas/bedes-auc/2014 ../BuildingSync.xsd"},
+    bsxml = et.Element('BuildingSync',
+                       {attr_qname: "http://nrel.gov/schemas/bedes-auc/2019 ../BuildingSync.xsd"},
                        nsmap=nsmap)
     # The following five lines are the original ElementTree version
     # bsxml = et.Element('Audits')
     # bsxml.attrib['xmlns'] = "http://nrel.gov/schemas/bedes-auc/2014"
     # bsxml.attrib['xmlns:xsi'] = "http://www.w3.org/2001/XMLSchema-instance"
     # bsxml.attrib['xsi:schemaLocation'] = "http://nrel.gov/schemas/bedes-auc/2014 ../BuildingSync.xsd"
-    audit = et.SubElement(bsxml, 'Audit')
+    #bsync = et.SubElement(bsxml, 'BuildingSync')
     # First is Sites
-    if (address is not None) or (keycontact is not None) or (facilities is not None):
-        sites = et.SubElement(audit, 'Sites')
+    facilities = None
+    if (address is not None) or (keycontact is not None) or (buildings is not None):
+        facilities = et.SubElement(bsxml, 'Facilities')
+        facility = et.SubElement(facilities, 'Facility')
+        sites = et.SubElement(facility, 'Sites')
         site = et.SubElement(sites, 'Site')
         if address is not None:
             site.append(address)
         if keycontact is not None:
             pcid = et.SubElement(site, 'PrimaryContactID')
             pcid.text = keycontact.attrib['ID']
-        if facilities is not None:
-            site.append(facilities)
+        if buildings is not None:
+            site.append(buildings)
     # Second is Systems
     if ((hvacsystems is not None) or (lightingsystems is not None) or (dhwsystems is not None)
             or (heatrecoverysystems is not None) or (wallsystems is not None) or (roofsystems is not None)
             or (ceilingsystems is not None) or (fenestrationsystems is not None) or (foundationsystems is not None)
             or (plugloads is not None)):
-        systems = et.SubElement(audit, 'Systems')
+        if facilities is None:
+            facilities = et.SubElement(bsxml, 'Facilities')
+            facility = et.SubElement(facilities, 'Facility')
+        systems = et.SubElement(facility, 'Systems')
         if hvacsystems is not None:
             systems.append(hvacsystems)
         if lightingsystems is not None:
@@ -2433,13 +2439,22 @@ def map_to_buildingsync(obj, groupspaces=False):
             systems.append(plugloads)
     # Next is Measures
     if measures is not None:
-        audit.append(measures)
+        if facilities is None:
+            facilities = et.SubElement(bsxml, 'Facilities')
+            facility = et.SubElement(facilities, 'Facility')
+        facility.append(measures)
     # Now Reports
     if report is not None:
-        audit.append(report)
+        if facilities is None:
+            facilities = et.SubElement(bsxml, 'Facilities')
+            facility = et.SubElement(facilities, 'Facility')
+        facility.append(report)
     # Last is Contacts
     if contacts is not None:
-        audit.append(contacts)
+        if facilities is None:
+            facilities = et.SubElement(bsxml, 'Facilities')
+            facility = et.SubElement(facilities, 'Facility')
+        facility.append(contacts)
     # Done!  
     return bsxml
 
@@ -2453,7 +2468,7 @@ def map_std211_xlsx_to_string(filename, verbose=False, groupspaces=False):
         warnings.simplefilter("ignore")
         wb = loadxl.load_workbook(filename)
         warnings.simplefilter("default")
-    std211 = read_std211_xls(wb)
+    std211 = read_std211_xlsx(wb)
     bsxml = map_to_buildingsync(std211, groupspaces=groupspaces)
     return '<?xml version="1.0" encoding="UTF-8"?>' + et.tostring(bsxml, encoding='utf-8').decode('utf-8')
 
@@ -2467,7 +2482,7 @@ def map_std211_xlsx_to_prettystring(filename, verbose=False, groupspaces=False):
         warnings.simplefilter("ignore")
         wb = loadxl.load_workbook(filename)
         warnings.simplefilter("default")
-    std211 = read_std211_xls(wb)
+    std211 = read_std211_xlsx(wb)
     bsxml = map_to_buildingsync(std211, groupspaces=groupspaces)
     return prettystring(bsxml).decode('utf-8')
 
@@ -2499,7 +2514,7 @@ if __name__ == '__main__':
         wb = loadxl.load_workbook(args.infile)
         warnings.simplefilter("default")
 
-    std211 = read_std211_xls(wb)
+    std211 = read_std211_xlsx(wb)
     bsxml = map_to_buildingsync(std211, groupspaces=args.group)
     if args.verbose:
         print(prettystring(bsxml).decode('utf-8'))

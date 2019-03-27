@@ -46,7 +46,8 @@ tree_data = remote_file.read()
 tree = etree.parse(BytesIO(tree_data))
 schema = etree.XMLSchema(tree)
 
-# legit = etree.parse('../bsxml/examples/Golden Test File.xml')
+#legit = etree.parse('../bsxml/examples/Golden Test File.xml')
+legit = etree.parse('Golden Test File.xml')
 
 
 def validate(filename, schema, instance):
@@ -66,7 +67,7 @@ class TestStd211Translation(unittest.TestCase):
             warnings.simplefilter("ignore")
             wb = loadxl.load_workbook(file)
             warnings.simplefilter("default")
-            std211 = read211.read_std211_xls(wb)
+            std211 = read211.read_std211_xlsx(wb)
             bsxml = read211.map_to_buildingsync(std211)
             # self.assertTrue(schema.validate(bsxml))
             self.assertEqual(validate(file, schema, bsxml), '')
@@ -83,8 +84,8 @@ class TestStd211Translation(unittest.TestCase):
             bsxml = etree.parse(BytesIO(txt.encode('utf-8')))
             self.assertEqual(validate(file, schema, bsxml), '')
 
-#    def test_legit(self):
-#        self.assertTrue(schema.validate(legit))
+    def test_legit(self):
+        self.assertTrue(schema.validate(legit))
 
 
 if __name__ == '__main__':
