@@ -35,7 +35,6 @@
 
 import openpyxl
 import loadxl
-import json
 import datetime
 import os
 import warnings
