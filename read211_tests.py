@@ -46,7 +46,7 @@ tree_data = remote_file.read()
 tree = etree.parse(BytesIO(tree_data))
 schema = etree.XMLSchema(tree)
 
-#legit = etree.parse('../bsxml/examples/Golden Test File.xml')
+# legit = etree.parse('../bsxml/examples/Golden Test File.xml')
 
 
 def validate(filename, schema, instance):
@@ -55,6 +55,7 @@ def validate(filename, schema, instance):
     except etree.DocumentInvalid as exc:
         return filename + ': ' + str(exc)
     return ''
+
 
 test_files = ['examples/std211_example.xlsx']
 
@@ -67,9 +68,8 @@ class TestStd211Translation(unittest.TestCase):
             warnings.simplefilter("default")
             std211 = read211.read_std211_xls(wb)
             bsxml = read211.map_to_buildingsync(std211)
-            #self.assertTrue(schema.validate(bsxml))
+            # self.assertTrue(schema.validate(bsxml))
             self.assertEqual(validate(file, schema, bsxml), '')
-
 
     def test_map_std211_xlsx_to_string(self):
         for file in test_files:
