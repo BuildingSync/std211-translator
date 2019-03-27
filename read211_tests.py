@@ -61,14 +61,15 @@ test_files = ['examples/std211_example.xlsx']
 
 class TestStd211Translation(unittest.TestCase):
     def test_main_style_call(self):
-        warnings.simplefilter("ignore")
         for file in test_files:
+            warnings.simplefilter("ignore")
             wb = loadxl.load_workbook(file)
+            warnings.simplefilter("default")
             std211 = read211.read_std211_xls(wb)
             bsxml = read211.map_to_buildingsync(std211)
             #self.assertTrue(schema.validate(bsxml))
             self.assertEqual(validate(file, schema, bsxml), '')
-        warnings.simplefilter("default")
+
 
     def test_map_std211_xlsx_to_string(self):
         for file in test_files:

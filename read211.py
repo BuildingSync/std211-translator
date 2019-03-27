@@ -1405,7 +1405,7 @@ def addel(outkey, parent, value):
 
 def addudf(parent, key, value, create=True):
     udfs = parent.find('UserDefinedFields')
-    if not udfs:
+    if udfs is None:
         if not create:
             return
         udfs = et.SubElement(parent, 'UserDefinedFields')
@@ -1908,7 +1908,7 @@ def map_to_buildingsync(obj, groupspaces=False):
             'Fenestration Glass Types' in envelope or
             'Fenestration Seal Condition' in envelope):
         # Something is there to put in sides, make what we need
-        if not subsection:
+        if subsection is None:
             subsections = et.SubElement(facility, 'Subsections')
             subsection = et.SubElement(subsections, 'Subsection')
         sides = et.SubElement(subsection, 'Sides')
@@ -1946,13 +1946,13 @@ def map_to_buildingsync(obj, groupspaces=False):
                        'ASHRAE Standard 211 Description of Exterior doors',
                        fenestrationsystem)
         # Fill in the side information
-        if wallsystem:
+        if wallsystem is not None:
             wallid = et.SubElement(side, 'WallID')
             wallid.attrib['IDref'] = wallsystem.attrib['ID']
             if 'Total exposed above grade wall area (sq ft)' in envelope:
                 addel('WallArea', wallid,
                       str(envelope['Total exposed above grade wall area (sq ft)']))
-        if fenestrationsystem:
+        if fenestrationsystem is not None:
             windowid = et.SubElement(side, 'WindowID')
             windowid.attrib['IDref'] = fenestrationsystem.attrib['ID']
             if 'Glazing area, approx % of exposed wall area [10, 25, 50, 75, 90, 100]*' in envelope:
@@ -2028,7 +2028,7 @@ def map_to_buildingsync(obj, groupspaces=False):
     # appendudf(udfs, 'Fenestration Seal Condition', envelope, prefix = 'ASHRAE Standard 211 ')
 
     if len(udfs) > 0:
-        if not subsection:
+        if subsection is None:
             subsections = et.SubElement(facility, 'Subsections')
             subsection = et.SubElement(subsections, 'Subsection')
         subsection.append(udfs)
@@ -2056,7 +2056,7 @@ def map_to_buildingsync(obj, groupspaces=False):
                 tzspaces = et.SubElement(tz, 'Spaces')
                 tzspaces.append(space)
     if len(thermalzones) > 0:
-        if not subsection:
+        if subsection is None:
             subsections = et.SubElement(facility, 'Subsections')
             subsection = et.SubElement(subsections, 'Subsection')
         subsection.append(thermalzones)
@@ -2237,7 +2237,7 @@ def map_to_buildingsync(obj, groupspaces=False):
         for pt in datapoints:
             ts.append(pt)
 
-    if len(scenario) > 0 and facility:
+    if len(scenario) > 0 and (facility is not None):
         link = et.SubElement(scenario, 'LinkedPremises')
         el = et.SubElement(link, 'Facility')
         el = et.SubElement(el, 'LinkedFacilityID')
@@ -2254,7 +2254,7 @@ def map_to_buildingsync(obj, groupspaces=False):
     if len(utilities) > 0:
         report.append(utilities)
 
-    if auditor:
+    if auditor is not None:
         el = et.SubElement(report, 'AuditorContactID')
         el.attrib['IDref'] = auditor.attrib['ID']
 
@@ -2396,49 +2396,50 @@ def map_to_buildingsync(obj, groupspaces=False):
     # bsxml.attrib['xsi:schemaLocation'] = "http://nrel.gov/schemas/bedes-auc/2014 ../BuildingSync.xsd"
     audit = et.SubElement(bsxml, 'Audit')
     # First is Sites
-    if address or keycontact or facilities:
+    if (address is not None) or (keycontact is not None) or (facilities is not None):
         sites = et.SubElement(audit, 'Sites')
         site = et.SubElement(sites, 'Site')
-        if address:
+        if address is not None:
             site.append(address)
-        if keycontact:
+        if keycontact is not None:
             pcid = et.SubElement(site, 'PrimaryContactID')
             pcid.text = keycontact.attrib['ID']
-        if facilities:
+        if facilities is not None:
             site.append(facilities)
     # Second is Systems
-    if (hvacsystems or lightingsystems or dhwsystems or heatrecoverysystems or wallsystems
-            or roofsystems or ceilingsystems or fenestrationsystems
-            or foundationsystems or plugloads):
+    if ((hvacsystems is not None) or (lightingsystems is not None) or (dhwsystems is not None)
+            or (heatrecoverysystems is not None) or (wallsystems is not None) or (roofsystems is not None)
+            or (ceilingsystems is not None) or (fenestrationsystems is not None) or (foundationsystems is not None)
+            or (plugloads is not None)):
         systems = et.SubElement(audit, 'Systems')
-        if hvacsystems:
+        if hvacsystems is not None:
             systems.append(hvacsystems)
-        if lightingsystems:
+        if lightingsystems is not None:
             systems.append(lightingsystems)
-        if dhwsystems:
+        if dhwsystems is not None:
             systems.append(dhwsystems)
-        if heatrecoverysystems:
+        if heatrecoverysystems is not None:
             systems.append(heatrecoverysystems)
-        if wallsystems:
+        if wallsystems is not None:
             systems.append(wallsystems)
-        if roofsystems:
+        if roofsystems is not None:
             systems.append(roofsystems)
-        if ceilingsystems:
+        if ceilingsystems is not None:
             systems.append(ceilingsystems)
-        if fenestrationsystems:
+        if fenestrationsystems is not None:
             systems.append(fenestrationsystems)
-        if foundationsystems:
+        if foundationsystems is not None:
             systems.append(foundationsystems)
-        if plugloads:
+        if plugloads is not None:
             systems.append(plugloads)
     # Next is Measures
-    if measures:
+    if measures is not None:
         audit.append(measures)
     # Now Reports
-    if report:
+    if report is not None:
         audit.append(report)
     # Last is Contacts
-    if contacts:
+    if contacts is not None:
         audit.append(contacts)
     # Done!  
     return bsxml
