@@ -2383,10 +2383,10 @@ def map_to_buildingsync(obj, groupspaces=False):
     # Assemble the final result
     #
     attr_qname = et.QName("http://www.w3.org/2001/XMLSchema-instance", "schemaLocation")
-    nsmap = {None: "http://nrel.gov/schemas/bedes-auc/2019",
+    nsmap = {None: "http://buildingsync.net/schemas/bedes-auc/2019",
              'xsi': "http://www.w3.org/2001/XMLSchema-instance"}
     bsxml = et.Element('BuildingSync',
-                       {attr_qname: "http://nrel.gov/schemas/bedes-auc/2019 ../BuildingSync.xsd"},
+                       {attr_qname: "http://buildingsync.net/schemas/bedes-auc/2019 ../BuildingSync.xsd"},
                        nsmap=nsmap)
     # The following five lines are the original ElementTree version
     # bsxml = et.Element('Audits')
