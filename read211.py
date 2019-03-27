@@ -1805,11 +1805,12 @@ def map_to_buildingsync(obj, groupspaces=False):
             for val in hvac['Boiler Type']:
                 addudf(el, 'ASHRAE Std 211 Boiler Type', val)
         # HeatingAndCoolingSystems
-        hacsys = el = et.Element('HeatingAndCoolingSystems')
+        hvacsys = el = et.Element('HeatingAndCoolingSystems')
         stuff = ['Heating Source', 'Heating Fuel']
         # Heating Source related info
         if any([el in hvac for el in stuff]):
-            el = et.SubElement(hacsys, 'HeatingSource')
+            el = et.SubElement(hvacsys, 'HeatingSources')
+            el = et.SubElement(el, 'HeatingSource')
             for tag in stuff:
                 if tag in hvac:
                     for val in hvac[tag]:
@@ -1817,13 +1818,14 @@ def map_to_buildingsync(obj, groupspaces=False):
         stuff = ['Cooling Source', 'Chiller Input', 'Compressor', 'Condenser']
         # Cooling Source related info
         if any([el in hvac for el in stuff]):
-            el = et.SubElement(hacsys, 'CoolingSource')
+            el = et.SubElement(hvacsys, 'CoolingSources')
+            el = et.SubElement(el, 'CoolingSource')
             for tag in stuff:
                 if tag in hvac:
                     for val in hvac[tag]:
                         addudf(el, 'ASHRAE Std 211 %s' % tag, val)
-        if len(hacsys) > 0:
-            hvacsystem.append(hacsys)
+        if len(hvacsys) > 0:
+            hvacsystem.append(hvacsys)
 
         # Tags with nowhere to go
         stuff = ['Zone Controls', 'Central Plant Controls', 'Heat Recovery', 'Outside Air',
@@ -2147,7 +2149,8 @@ def map_to_buildingsync(obj, groupspaces=False):
                            'ASHRAE Standard 211 Energy Source', resource)
             el = et.SubElement(resource, 'ResourceUnits')
             el.text = metered_energy_bsxml_units[metered_energy[name]['Type']]
-            el = et.SubElement(resource, 'UtilityID')
+            el = et.SubElement(resource, 'UtilityIDs')
+            el = et.SubElement(el, 'UtilityID')
             el.attrib['IDref'] = 'Std211Metered' + name.replace(' #', '')
             easymapudf(metered_energy[name]['Definition'], 'kBtu/unit', 'ASHRAE Standard 211 kBtu/unit', resource)
             resources.append(resource)

@@ -65,6 +65,9 @@ test_files = ['examples/std211_example.xlsx']
 
 
 class TestStd211Translation(unittest.TestCase):
+    def setUp(self):
+        self.maxDiff = None
+
     def test_main_style_call(self):
         for file in test_files:
             warnings.simplefilter("ignore")
