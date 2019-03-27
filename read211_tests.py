@@ -48,12 +48,14 @@ schema = etree.XMLSchema(tree)
 
 #legit = etree.parse('../bsxml/examples/Golden Test File.xml')
 
+
 def validate(filename, schema, instance):
     try:
         schema.assertValid(instance)
     except etree.DocumentInvalid as exc:
         return filename + ': ' + str(exc)
     return ''
+
 
 class TestStd211Translation(unittest.TestCase):
     def test_files(self):
@@ -68,6 +70,7 @@ class TestStd211Translation(unittest.TestCase):
         warnings.simplefilter("default")
 #    def test_legit(self):
 #        self.assertTrue(schema.validate(legit))
+
 
 if __name__ == '__main__':
     unittest.main()
