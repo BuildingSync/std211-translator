@@ -46,8 +46,11 @@ tree_data = remote_file.read()
 tree = etree.parse(BytesIO(tree_data))
 schema = etree.XMLSchema(tree)
 
+remote_file = urllib.request.urlopen('https://raw.githubusercontent.com/BuildingSync/schema/develop/examples/Golden%20Test%20File.xml')
+tree_data = remote_file.read()
+legit = etree.parse(BytesIO(tree_data))
 #legit = etree.parse('../bsxml/examples/Golden Test File.xml')
-legit = etree.parse('Golden Test File.xml')
+#legit = etree.parse('Golden Test File.xml')
 
 
 def validate(filename, schema, instance):

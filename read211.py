@@ -2393,7 +2393,7 @@ def map_to_buildingsync(obj, groupspaces=False):
     # bsxml.attrib['xmlns'] = "http://nrel.gov/schemas/bedes-auc/2014"
     # bsxml.attrib['xmlns:xsi'] = "http://www.w3.org/2001/XMLSchema-instance"
     # bsxml.attrib['xsi:schemaLocation'] = "http://nrel.gov/schemas/bedes-auc/2014 ../BuildingSync.xsd"
-    #bsync = et.SubElement(bsxml, 'BuildingSync')
+
     # First is Sites
     facilities = None
     if (address is not None) or (keycontact is not None) or (buildings is not None):
