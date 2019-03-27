@@ -39,21 +39,14 @@ import loadxl
 import warnings
 import urllib.request
 from lxml import etree
-from io import StringIO
+from io import BytesIO
 
-#remote_file = urllib.request.urlopen('https://github.com/BuildingSync/schema/blob/develop/BuildingSync.xsd')
-#schema_data = remote_file.read()
-
-#doc = etree.parse(StringIO(schema_data.decode()))
-fp = open('../bsxml/BuildingSync.xsd', 'r')
-txt = fp.read()
-fp.close()
-#tree = etree.parse('https://github.com/BuildingSync/schema/blob/develop/BuildingSync.xsd')
-tree = etree.parse('../bsxml/BuildingSync.xsd')
-#doc = etree.parse(txt)
+remote_file = urllib.request.urlopen('https://raw.githubusercontent.com/BuildingSync/schema/develop/BuildingSync.xsd')
+tree_data = remote_file.read()
+tree = etree.parse(BytesIO(tree_data))
 schema = etree.XMLSchema(tree)
 
-legit = etree.parse('../bsxml/examples/Golden Test File.xml')
+#legit = etree.parse('../bsxml/examples/Golden Test File.xml')
 
 def validate(filename, schema, instance):
     try:
@@ -73,8 +66,8 @@ class TestStd211Translation(unittest.TestCase):
             #self.assertTrue(schema.validate(bsxml))
             self.assertEqual(validate(file, schema, bsxml), '')
         warnings.simplefilter("default")
-    def test_legit(self):
-        self.assertTrue(schema.validate(legit))
+#    def test_legit(self):
+#        self.assertTrue(schema.validate(legit))
 
 if __name__ == '__main__':
     unittest.main()
