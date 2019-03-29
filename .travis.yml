@@ -7,6 +7,6 @@ install:
   - pip install -r doc_requirements.txt
 script:
   - cd doc
-  - make
+  - make html
   - cd ..
   - python -m unittest read211_tests.py
