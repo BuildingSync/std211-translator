@@ -1,4 +1,4 @@
-# BuildingSync(R), Copyright (c) 2015-2018, Alliance for Sustainable Energy, LLC.
+# BuildingSync(R), Copyright (c) 2015-2019, Alliance for Sustainable Energy, LLC.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
@@ -1162,7 +1162,16 @@ def read_L2_eem_summary(worksheet):
 
 
 def read_std211_xlsx(workbook, IP=True):
-    ''' Read Standard 211 information from an Excel workbook into a dictionary '''
+    '''Read Standard 211 information from an Excel workbook into a dictionary.
+
+    :param workbook: Excel workbook object from openpyxl/loadxl
+    :param IP: Boolean determining unit handling, True uses IP units (Defaults to True)
+    :return: dictionary object containing data
+
+    Pull data from a spreadsheet object and populate a dictionary. Due to the use of checkboxes in a number of sheets,
+    the additional code in the loadxl module is needed to pull out all data. Use of vanilla openpyxl may not result in
+    all information being read out.
+    '''
     std211 = {}
     #
     # Read the 'All - Building' sheet
@@ -1591,6 +1600,16 @@ def map_equipment_inventory(inventory):
 
 
 def map_to_buildingsync(obj, groupspaces=False):
+    """Map a dictionary of Standard 211 data into the BuildingSync XML object.
+
+    What happens here?
+
+    :param obj: dictionary of Standard 211 data
+    :param groupspaces: Boolean determining if spaces should be combined into a single zone (defaults to False)
+    :return: BuildingSync XML object (lxml.etree.ElemenTree)
+
+    How about this?
+    """
     #
     allbuilding = obj['All - Building']
     spacefunctions = obj['All - Space Functions']
@@ -2503,21 +2522,25 @@ def map_std211_xlsx_to_prettystring(filename, verbose=False, groupspaces=False):
     return prettystring(bsxml).decode('utf-8')
 
 
-if __name__ == '__main__':
+def argument_parser():
     import argparse
 
-    parser = argparse.ArgumentParser(description='Convert ASHRAE Std. 211 Workbook into BSXML.')
-    parser.add_argument('infile', metavar='INFILE')
+    parser = argparse.ArgumentParser(description='Translate an ASHRAE Std. 211 Workbook into BuildingSync XML.')
+    parser.add_argument('infile', metavar='INFILE', help='input Excel spreadsheet file name')
     parser.add_argument('-p', '--pretty', dest='pretty', action='store_true',
                         help='output pretty xml')
     parser.add_argument('-o', '--output', dest='outfile', action='store',
                         default='std211.xml',
-                        help='file to save BSXML output in')
+                        help='file to save BuildingSync XML output in')
     parser.add_argument('-g', '--groupspaces', dest='group', action='store_true',
                         help='group spaces into zones by principal HVAC type')
     parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
                         help='operate verbosely')
+    return parser
 
+
+if __name__ == '__main__':
+    parser = argument_parser()
     args = parser.parse_args()
 
     if not os.path.exists(args.infile):
