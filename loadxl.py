@@ -39,8 +39,14 @@ import os
 import xml.etree.ElementTree as et
 
 class Control:
+    """Data structure to contain data associated with an Excel control
+
+    :ivar text: Text in the control
+    :ivar checked: Boolean checkbox status, True if checked and False otherwise
+
+    """
     def __init__(self, name, relId=None, shapeId=None):
-        self.name = name
+        self.name = name # name of the control
         self.relId = relId
         self.shapeId = shapeId
         self.text = None
@@ -60,6 +66,12 @@ def normpath(path):
     return npath
 
 def load_workbook(filename, control_sheets=None):
+    """Load an Excel spreadsheet into memory including controls and textboxes
+
+    :param filename: file name of Excel file read
+    :param control_sheets: if not none, the list of names of spreadsheets to process. If not specified, all sheets will be processed
+    :return: openpyxl workbook object with appended controls and textboxes
+    """
     workbook = openpyxl.load_workbook(filename) #,read_only=True,keep_vba=True)
     if not control_sheets:
         control_sheets = workbook.sheetnames

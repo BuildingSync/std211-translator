@@ -1605,7 +1605,7 @@ def map_to_buildingsync(obj, groupspaces=False):
     What happens here?
 
     :param obj: dictionary of Standard 211 data
-    :param groupspaces: Boolean determining if spaces should be combined into a single zone (defaults to False)
+    :param groupspaces: Boolean determining if spaces should be combined by HVAC type (defaults to False)
     :return: BuildingSync XML object (lxml.etree.ElemenTree)
 
     How about this?
@@ -2495,6 +2495,13 @@ def map_to_buildingsync(obj, groupspaces=False):
 
 
 def map_std211_xlsx_to_string(filename, verbose=False, groupspaces=False):
+    """Map a spreadsheet file into BuildingSync XML string.
+
+    :param filename: name of input Excel file
+    :param verbose: Boolean flag controlling output during translation (defaults to False)
+    :param groupspaces: Boolean determining if spaces should be combined by HVAC type (defaults to False)
+    :return: BuildingSync XML as a string
+    """
     if not os.path.exists(filename):
         raise Exception('File "%s" does not exist' % filename)
     if verbose:
@@ -2509,6 +2516,13 @@ def map_std211_xlsx_to_string(filename, verbose=False, groupspaces=False):
 
 
 def map_std211_xlsx_to_prettystring(filename, verbose=False, groupspaces=False):
+    """Map a spreadsheet file into a pretty-printed BuildingSync XML string.
+
+        :param filename: name of input Excel file
+        :param verbose: Boolean flag controlling output during translation (defaults to False)
+        :param groupspaces: Boolean determining if spaces should be combined by HVAC type (defaults to False)
+        :return: BuildingSync XML as a pretty-printed string
+        """
     if not os.path.exists(filename):
         raise Exception('File "%s" does not exist' % filename)
     if verbose:
