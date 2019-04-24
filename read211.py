@@ -35,12 +35,12 @@
 
 import openpyxl
 import loadxl
-import json
 import datetime
 import os
 import warnings
 import calendar
-import xml.etree.ElementTree as et
+import lxml.etree as et
+# import xml.etree.ElementTree as et
 from xml.dom import minidom
 
 # Known limitations:
@@ -64,7 +64,7 @@ metered_energy_bsxml_units = {'Electricity': 'kWh',
                               'Propane': 'Gallons',
                               'Coal': 'Mass ton',
                               'Other': 'kWh',
-                              'Thermal - On-Site Generated': 'Unknown', # This was blank, that doesn't seem right
+                              'Thermal - On-Site Generated': 'Unknown',  # This was blank, that doesn't seem right
                               'Electricity - On-Site Generated': 'kWh',
                               'Thermal or Electricity - Exported': 'MMBtu'}
 metered_energy_default_units = {'Electricity': 'kWh',
@@ -76,7 +76,7 @@ metered_energy_default_units = {'Electricity': 'kWh',
                                 'Propane': 'gallons (Propane)',
                                 'Coal': 'short ton (coal)',
                                 'Other': 'kWh',
-                                'Thermal - On-Site Generated': '', # This is blank, that doesn't seem right
+                                'Thermal - On-Site Generated': '',  # This is blank, that doesn't seem right
                                 'Electricity - On-Site Generated': 'kWh',
                                 'Thermal or Electricity - Exported': 'MMBtu'}
 # This one is harder to read from the spreadsheet, but could be done
@@ -101,11 +101,10 @@ bsxml_ballast_lookup = {'Electronic': 'Electronic',
                         'N/A': 'No Ballast',
                         'Other': 'Other'}
 
-
 conversion_to_kBtu = {'kWh': 3.412,
                       'MWh': 3412,
                       'MMBtu': 1000,
-                      'therms':	100,
+                      'therms': 100,
                       'dekatherms': 1000,
                       'MJ': 0.947777778,
                       'cubic feet (NG)': 1.030,
@@ -133,10 +132,10 @@ conversion_to_kBtu = {'kWh': 3.412,
 bsxml_unit_lookup = {'kWh': 'kWh',
                      'MWh': 'MWh',
                      'MMBtu': 'MMBtu',
-                     'therms':	'therms',
-                     #'dekatherms': 1000,
-                     #'MJ': 0.947777778,
-                     #'cubic feet (NG)': 1.030,
+                     'therms': 'therms',
+                     # 'dekatherms': 1000,
+                     # 'MJ': 0.947777778,
+                     # 'cubic feet (NG)': 1.030,
                      'MCF (NG)': 'MCF',
                      'lbs District Steam': 'lbs',
                      'lbs District Steam (15 psig) dumped after use': 'lbs',
@@ -156,7 +155,7 @@ bsxml_unit_lookup = {'kWh': 'kWh',
                      'gallons (Diesel)': 'Gallons',
                      'gallons (Gasoline)': 'Gallons',
                      'gallons (Propane)': 'Gallons'}
-                     #'cubic feet (Propane)': 2.516}
+# 'cubic feet (Propane)': 2.516}
 
 energysources_labels = ['Energy Source',
                         'ID',
@@ -303,16 +302,16 @@ def getlabeledvalues(worksheet, cellrange, labelcolor=0, IP=True,
             if row[0].value != None and row[-1].value != None:
                 if variablelength:
                     if (row[0].fill.start_color.index != labelcolor or
-                        row[-1].fill.start_color.index != valuecolor):
+                            row[-1].fill.start_color.index != valuecolor):
                         break
                 result[row[0].value] = row[-1].value
     else:
         for row in worksheet.iter_rows(min_row=minrow, min_col=labelcol,
-                                       max_col=valuecol+1, max_row=maxrow):
+                                       max_col=valuecol + 1, max_row=maxrow):
             if row[0].value != None and row[-2].value != None:
                 if variablelength:
                     if (row[0].fill.start_color.index != labelcolor or
-                        row[-2].fill.start_color.index != valuecolor):
+                            row[-2].fill.start_color.index != valuecolor):
                         break
                 if row[-1].value != None:
                     # Handle the units, this could get ugly
@@ -323,7 +322,7 @@ def getlabeledvalues(worksheet, cellrange, labelcolor=0, IP=True,
                             units = 'sq ft'
                         else:
                             units = 'sq m'
-                    key = row[0].value.rstrip()+(' (%s)'%units)
+                    key = row[0].value.rstrip() + (' (%s)' % units)
                     result[key] = row[-2].value
                 else:
                     result[row[0].value] = row[-2].value
@@ -341,13 +340,13 @@ def getlist(worksheet, cellrange, variablelength=False, fillcolor=8):
             rangetuple = cellrange
         else:
             raise TypeError('Unable to determine cell range')
-    diff = (rangetuple[2]-rangetuple[0],
-            rangetuple[3]-rangetuple[1])
+    diff = (rangetuple[2] - rangetuple[0],
+            rangetuple[3] - rangetuple[1])
     result = []
     if diff[0] == 0:
         listcol = rangetuple[0]
         for row in worksheet.iter_rows(min_row=rangetuple[1], min_col=listcol,
-                                max_col=listcol, max_row=rangetuple[3]):
+                                       max_col=listcol, max_row=rangetuple[3]):
             if variablelength:
                 if not row[0].value or row[0].fill.start_color.index != fillcolor:
                     break
@@ -355,7 +354,7 @@ def getlist(worksheet, cellrange, variablelength=False, fillcolor=8):
     elif diff[1] == 0:
         listrow = rangetuple[1]
         for col in worksheet.iter_cols(min_col=rangetuple[0], min_row=listrow,
-                                max_row=listrow, max_col=rangetuple[2]):
+                                       max_row=listrow, max_col=rangetuple[2]):
             if variablelength:
                 if not col[0].value or col[0].fill.start_color.index != fillcolor:
                     break
@@ -382,7 +381,7 @@ def getinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
                                        max_col=rangetuple[2], max_row=rangetuple[3]):
             if variablelength:
                 if (not row[0].value
-                    or row[0].fill.start_color.index != fillcolor):
+                        or row[0].fill.start_color.index != fillcolor):
                     break
             elif not keepemptyrows:
                 if not row[0].value:
@@ -397,9 +396,9 @@ def getinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
                     continue
             if labels:
                 if keepemptycells:
-                    data = dict(zip(labels[1:],data))
+                    data = dict(zip(labels[1:], data))
                 else:
-                    data = dict([el for el in zip(labels[1:],data) if el[1] != None])
+                    data = dict([el for el in zip(labels[1:], data) if el[1] != None])
             result[row[0].value] = data
     else:
         listrow = rangetuple[1]
@@ -407,7 +406,7 @@ def getinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
                                        max_row=rangetuple[3], max_col=rangetuple[2]):
             if variablelength:
                 if (not col[0].value
-                    or col[0].fill.start_color.index != fillcolor):
+                        or col[0].fill.start_color.index != fillcolor):
                     break
             elif not keepemptyrows:
                 if not col[0].value:
@@ -422,9 +421,9 @@ def getinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
                     continue
             if labels:
                 if keepemptycells:
-                    data = dict(zip(labels[1:],data))
+                    data = dict(zip(labels[1:], data))
                 else:
-                    data = dict([el for el in zip(labels[1:],data) if el[1] != None])
+                    data = dict([el for el in zip(labels[1:], data) if el[1] != None])
             result[col[0].value] = data
     return result
 
@@ -448,7 +447,7 @@ def gettable(worksheet, cellrange, variablelength=False, fillcolor=8,
                                        max_col=rangetuple[2], max_row=rangetuple[3]):
             if variablelength:
                 if (not row[0].value
-                    or row[0].fill.start_color.index != fillcolor):
+                        or row[0].fill.start_color.index != fillcolor):
                     break
             elif not keepempty:
                 if not row[0].value:
@@ -462,7 +461,7 @@ def gettable(worksheet, cellrange, variablelength=False, fillcolor=8,
                 if count == 0:
                     continue
             if labels:
-                data = dict(zip(labels,data))
+                data = dict(zip(labels, data))
             result.append(data)
     else:
         listrow = rangetuple[1]
@@ -470,7 +469,7 @@ def gettable(worksheet, cellrange, variablelength=False, fillcolor=8,
                                        max_row=rangetuple[3], max_col=rangetuple[2]):
             if variablelength:
                 if (not col[0].value
-                    or col[0].fill.start_color.index != fillcolor):
+                        or col[0].fill.start_color.index != fillcolor):
                     break
             elif not keepempty:
                 if not col[0].value:
@@ -484,9 +483,10 @@ def gettable(worksheet, cellrange, variablelength=False, fillcolor=8,
                 if count == 0:
                     continue
             if labels:
-                data = dict(zip(labels,data))
+                data = dict(zip(labels, data))
             result.append(data)
     return result
+
 
 def getlistinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
                 labels=None, inrows=True, keepempty=False):
@@ -507,13 +507,13 @@ def getlistinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
                                        max_col=rangetuple[2], max_row=rangetuple[3]):
             if variablelength:
                 if (not row[0].value
-                    or row[0].fill.start_color.index != fillcolor):
+                        or row[0].fill.start_color.index != fillcolor):
                     break
             elif not keepempty:
                 if not row[0].value:
                     continue
             data = [el.value for el in row]
-            
+
             if not keepempty:
                 count = 0
                 for el in data:
@@ -529,7 +529,7 @@ def getlistinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
                         continue
                     out[labels[i]] = data[i]
                 data = out
-                #data = dict(zip(labels,data))
+                # data = dict(zip(labels,data))
             result.append(data)
     else:
         listrow = rangetuple[1]
@@ -537,7 +537,7 @@ def getlistinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
                                        max_row=rangetuple[3], max_col=rangetuple[2]):
             if variablelength:
                 if (not col[0].value
-                    or col[0].fill.start_color.index != fillcolor):
+                        or col[0].fill.start_color.index != fillcolor):
                     break
             elif not keepempty:
                 if not col[0].value:
@@ -558,9 +558,10 @@ def getlistinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
                         continue
                     out[labels[i]] = data[i]
                 data = out
-                #data = dict(zip(labels,data))
+                # data = dict(zip(labels,data))
             result.append(data)
     return result
+
 
 def gettabular(worksheet, mincol, minrow, maxcol, maxrow):
     results = []
@@ -569,12 +570,14 @@ def gettabular(worksheet, mincol, minrow, maxcol, maxrow):
         results.append([el.value for el in row])
     return results
 
+
 def getcellrange(worksheet, cellrange):
     try:
         mincol, minrow, maxcol, maxrow = openpyxl.utils.range_boundaries(cellrange)
     except TypeError:
         return None
     return gettabular(worksheet, mincol, minrow, maxcol, maxrow)
+
 
 def scanRowForEmpty(worksheet, col, row, maxcol=256):
     count = 0
@@ -583,6 +586,7 @@ def scanRowForEmpty(worksheet, col, row, maxcol=256):
         if not col[0].value:
             return count
         count += 1
+
 
 def scanForExpandableColumnTable(worksheet, mincol=1, minrow=1, maxrow=1,
                                  minentries=1):
@@ -600,16 +604,18 @@ def scanForExpandableColumnTable(worksheet, mincol=1, minrow=1, maxrow=1,
         result.append(data)
     return result
 
+
 def scanForHeaderRow(worksheet, mincol, minrow, header):
-    maxcol = mincol+len(header)-1
+    maxcol = mincol + len(header) - 1
     count = 0
     for row in worksheet.iter_rows(min_col=mincol, min_row=minrow,
                                    max_col=maxcol):
         data = [el.value for el in row]
         if data == header:
-            return minrow+count
+            return minrow + count
         count += 1
     raise ScanFailure('Failed to find header')
+
 
 def scan_for_cell_value(worksheet, mincol=None, minrow=None, maxcol=None,
                         maxrow=None, value=None):
@@ -619,6 +625,7 @@ def scan_for_cell_value(worksheet, mincol=None, minrow=None, maxcol=None,
             if el.value == value:
                 return tuple_from_coordinate(el.coordinate)
     raise ScanFailure('Failed to find cell value')
+
 
 def read_all_building(worksheet):
     '''Read the 'All - Building' sheet
@@ -644,8 +651,8 @@ def read_all_building(worksheet):
     # Look for Occupancy*
     cellcol, cellrow = scan_for_cell_value(worksheet, mincol=1, minrow=34,
                                            maxcol=1, value='Occupancy*')
-    occupancy = getlabeledvalues(worksheet, [cellcol, cellrow+1,
-                                             cellcol, cellrow+5],
+    occupancy = getlabeledvalues(worksheet, [cellcol, cellrow + 1,
+                                             cellcol, cellrow + 5],
                                  hasunits=True)
     # Energy Sources
     # Look for Energy Sources**
@@ -654,11 +661,11 @@ def read_all_building(worksheet):
     cellrow += 1
     # Check the labels
     labels = cellrange(worksheet, mincol=cellcol, minrow=cellrow,
-                       maxcol=cellcol+5, maxrow=cellrow)
+                       maxcol=cellcol + 5, maxrow=cellrow)
     if labels != energysources_labels:
         raise LabelMismatch('Mismatch in energy sources labels')
     cellrow += 1
-    energy_sources = getlistinfo(worksheet, [cellcol, cellrow, cellcol+5, None],
+    energy_sources = getlistinfo(worksheet, [cellcol, cellrow, cellcol + 5, None],
                                  variablelength=True, labels=labels,
                                  inrows=True, keepempty=False)
 
@@ -666,7 +673,7 @@ def read_all_building(worksheet):
     # Look for Facility Description - Notable Conditions
     cellcol, cellrow = scan_for_cell_value(worksheet, mincol=1, minrow=54, maxcol=1,
                                            value='Facility Description - Notable Conditions')
-    description = worksheet.cell(column=cellcol, row=cellrow+1).value
+    description = worksheet.cell(column=cellcol, row=cellrow + 1).value
 
     # Package the data
     bldg_info['Occupancy'] = occupancy
@@ -677,6 +684,7 @@ def read_all_building(worksheet):
 
     return bldg_info
 
+
 def read_utility_table(worksheet, name, labels, row=1, col=1):
     # Scan for the name
     cellcol, cellrow = scan_for_cell_value(worksheet, mincol=col, minrow=row,
@@ -686,22 +694,24 @@ def read_utility_table(worksheet, name, labels, row=1, col=1):
     cellrow += 4
 
     data = gettable(worksheet, [cellcol, cellrow,
-                                cellcol+len(labels), None],
+                                cellcol + len(labels), None],
                     variablelength=True, inrows=True, labels=labels)
 
     return data
+
 
 def read_utility_definition(worksheet, name, row=1, col=1):
     # Scan for the name
     cellcol, cellrow = scan_for_cell_value(worksheet, mincol=col, minrow=row,
                                            maxcol=col,
-                                           value=name+': Definition')
+                                           value=name + ': Definition')
     # Labeled items are one row down
     cellrow += 1
     data = getlabeledvalues(worksheet, [cellcol, cellrow,
-                                        cellcol+1, cellrow+1])
+                                        cellcol + 1, cellrow + 1])
 
     return data
+
 
 def read_all_metered_energy(worksheet):
     '''Read the 'All - Metered Energy' sheet
@@ -726,11 +736,11 @@ def read_all_metered_energy(worksheet):
         data['Utility #1'] = {}
         data['Utility #1']['Data'] = utility
         data['Utility #1']['Definition'] = definition
-        data['Utility #1']['Type'] = 'Electricity' # Here's where we could check if this is true
+        data['Utility #1']['Type'] = 'Electricity'  # Here's where we could check if this is true
     if 'Utility #2' in header_info:
         utility = read_utility_table(worksheet, 'Utility #2',
-                                                   other_labels,
-                                                   row=15, col=1)
+                                     other_labels,
+                                     row=15, col=1)
         definition = read_utility_definition(worksheet, 'Utility #2',
                                              row=15, col=1)
         data['Utility #2'] = {}
@@ -739,8 +749,8 @@ def read_all_metered_energy(worksheet):
         data['Utility #2']['Type'] = header_info['Utility #2']
     if 'Utility #3' in header_info:
         utility = read_utility_table(worksheet, 'Utility #3',
-                                                   other_labels,
-                                                   row=15, col=1)
+                                     other_labels,
+                                     row=15, col=1)
         definition = read_utility_definition(worksheet, 'Utility #3',
                                              row=15, col=1)
         data['Utility #3'] = {}
@@ -748,7 +758,8 @@ def read_all_metered_energy(worksheet):
         data['Utility #3']['Definition'] = definition
         data['Utility #3']['Type'] = header_info['Utility #3']
     return data
-    
+
+
 def read_all_delivered_energy(worksheet):
     '''Read the 'All - Delivered Energy' sheet
 
@@ -762,18 +773,19 @@ def read_all_delivered_energy(worksheet):
                                            value='Delivery date')
     # Get the table
     labels = ['Delivery date', 'Volume', 'kBTU', 'Cost']
-    delivered = gettable(worksheet, [cellcol, cellrow+1,
-                                     cellcol+3, None],
+    delivered = gettable(worksheet, [cellcol, cellrow + 1,
+                                     cellcol + 3, None],
                          variablelength=True,
                          inrows=True, labels=labels)
 
     # Lood for 'Estimated Annual Use**' in the first column
-    cellcol, cellrow = scan_for_cell_value(worksheet, mincol=1, minrow=cellrow+1,
+    cellcol, cellrow = scan_for_cell_value(worksheet, mincol=1, minrow=cellrow + 1,
                                            maxcol=1,
                                            value='Estimated Annual Use**')
-    estimated_annual_use = worksheet.cell(column=cellcol+2, row=cellrow).value
+    estimated_annual_use = worksheet.cell(column=cellcol + 2, row=cellrow).value
     header_info['Estimated Annual Use**'] = estimated_annual_use
-    return {'Definition':header_info, 'Data':delivered}
+    return {'Definition': header_info, 'Data': delivered}
+
 
 def read_L1_eem_summary(worksheet):
     '''Read the 'L1 - EEM Summary' sheet
@@ -784,17 +796,18 @@ def read_L1_eem_summary(worksheet):
     row0 = scanForHeaderRow(worksheet, 1, 3, L1_eemsummary_header_yi)
 
     # Find the second table
-    row1 = scanForHeaderRow(worksheet, 1, row0+1, L1_eemsummary_header_er)
+    row1 = scanForHeaderRow(worksheet, 1, row0 + 1, L1_eemsummary_header_er)
 
     # Get the first table
-    lowcost = getinfo(worksheet, [1, row0+1, len(L1_eemsummary_header_yi), row1-1],
+    lowcost = getinfo(worksheet, [1, row0 + 1, len(L1_eemsummary_header_yi), row1 - 1],
                       labels=L1_eemsummary_header_yi)
     # Get the second table
-    potentialcapital = getinfo(worksheet, [1, row1+1, len(L1_eemsummary_header_er), None],
+    potentialcapital = getinfo(worksheet, [1, row1 + 1, len(L1_eemsummary_header_er), None],
                                labels=L1_eemsummary_header_er)
 
-    return {'Low-Cost and No-Cost Recommendations' : lowcost,
-            'Potential Capital Recommendations' : potentialcapital}
+    return {'Low-Cost and No-Cost Recommendations': lowcost,
+            'Potential Capital Recommendations': potentialcapital}
+
 
 def read_space_functions(worksheet):
     '''Read the 'All - Space Functions' sheet
@@ -807,24 +820,26 @@ def read_space_functions(worksheet):
 
     # Check the labels
     labels = cellrange(worksheet, mincol=cellcol, minrow=cellrow, maxcol=cellcol,
-                       maxrow=cellrow+len(spacefunctions_211_labels)-1)
+                       maxrow=cellrow + len(spacefunctions_211_labels) - 1)
     if labels != spacefunctions_211_labels:
         raise LabelMismatch('Mismatch in space function labels')
-    space_functions = getinfo(worksheet, [cellcol+1, cellrow, None,
-                                          cellrow+len(spacefunctions_211_labels)-1],
+    space_functions = getinfo(worksheet, [cellcol + 1, cellrow, None,
+                                          cellrow + len(spacefunctions_211_labels) - 1],
                               inrows=False, labels=spacefunctions_labels)
     return space_functions
 
-def handle_key_formulas(key,IP):
+
+def handle_key_formulas(key, IP):
     newkey = key
     if '&IF(Instructions!B18="IP","(ft2)","m2")' in key:
-        unit = {True:' (ft2)', False:' (m2)'}[IP]
+        unit = {True: ' (ft2)', False: ' (m2)'}[IP]
         newkey = newkey[1:].replace('&IF(Instructions!B18="IP","(ft2)","m2")', '')
-        newkey = newkey.replace('"','')
+        newkey = newkey.replace('"', '')
         newkey = newkey.strip() + unit
     return newkey
 
-def read_L2_envelope(worksheet,IP=True):
+
+def read_L2_envelope(worksheet, IP=True):
     '''Read the 'L2 - Envelope' sheet
 
     This sheet is a combination of free entry, one choice, and checkboxes
@@ -841,8 +856,8 @@ def read_L2_envelope(worksheet,IP=True):
     keys = list(info.keys())
     for key in keys:
         if key.startswith('='):
-            newkey = handle_key_formulas(key,IP)
-            value = info.pop(key,None)
+            newkey = handle_key_formulas(key, IP)
+            value = info.pop(key, None)
             info[newkey] = value
     # Ye olde awful tables
     roof_constuction_table = ['Check Box 1',
@@ -879,12 +894,12 @@ def read_L2_envelope(worksheet,IP=True):
                              'Check Box 30',
                              'Check Box 31',
                              'Check Box 32']
-    big_table = {'Roof Construction':roof_constuction_table,
-                 'Fenestration Frame Types':fenestration_frame_types_table,
-                 'Floor Construction':floor_construction_table,
-                 'Fenestration Glass Types':fenestration_glass_types_table,
-                 'Wall Constructions':wall_constructions_table,
-                 'Foundation Type':foundation_type_table}
+    big_table = {'Roof Construction': roof_constuction_table,
+                 'Fenestration Frame Types': fenestration_frame_types_table,
+                 'Floor Construction': floor_construction_table,
+                 'Fenestration Glass Types': fenestration_glass_types_table,
+                 'Wall Constructions': wall_constructions_table,
+                 'Foundation Type': foundation_type_table}
     # Try to use that stuff now
     for tablename, checkboxes in big_table.items():
         table = []
@@ -894,6 +909,7 @@ def read_L2_envelope(worksheet,IP=True):
         if table:
             info[tablename] = table
     return info
+
 
 def read_L2_hvac(worksheet):
     zone_controls_table = ['Check Box 73',
@@ -970,11 +986,11 @@ def read_L2_hvac(worksheet):
                          'Check Box 39']
     shw_dhw_source_table = ['Check Box 20',
                             'Check Box 44',
-                            'Check Box 21', #
-                            'Check Box 22', #
+                            'Check Box 21',  #
+                            'Check Box 22',  #
                             'Check Box 47',
-                            'Check Box 45', #
-                            'Check Box 46', #
+                            'Check Box 45',  #
+                            'Check Box 46',  #
                             'Check Box 23',
                             'Check Box 24']
     shw_dhw_fuel_table = ['Check Box 48',
@@ -985,22 +1001,22 @@ def read_L2_hvac(worksheet):
     shw_dhw_fuel_other = 'TextBox 87'
 
     info = {}
-    big_table = {'Zone Controls':zone_controls_table,
-                 'Central Plant Controls':central_plant_controls_table,
-                 'Outside Air':outside_air_table,
-                 'Heat Recovery':heat_recovery_table,
-                 'Cooling Distribution Equipment Type':cooling_dist_equip_table,
-                 'Heating Distribution Equipment Type':heating_dist_equip_table,
-                 'Chiller Input':chiller_input_table,
-                 'Compressor':compressor_table,
-                 'Condenser':condenser_table,
-                 'Heating Fuel':heating_fuel_table,
-                 'Boiler Type':boiler_type_table,
-                 'SHW/DHW Source':shw_dhw_source_table,
-                 'SHW/DHW Fuel':shw_dhw_fuel_table}
-    check_table = {'Exhaust Fans':(exhaust_fans_none, exhaust_fans_table),
-                   'Cooling Source':(cooling_source_none, cooling_source_table),
-                   'Heating Source':(heating_source_none, heating_source_table)}
+    big_table = {'Zone Controls': zone_controls_table,
+                 'Central Plant Controls': central_plant_controls_table,
+                 'Outside Air': outside_air_table,
+                 'Heat Recovery': heat_recovery_table,
+                 'Cooling Distribution Equipment Type': cooling_dist_equip_table,
+                 'Heating Distribution Equipment Type': heating_dist_equip_table,
+                 'Chiller Input': chiller_input_table,
+                 'Compressor': compressor_table,
+                 'Condenser': condenser_table,
+                 'Heating Fuel': heating_fuel_table,
+                 'Boiler Type': boiler_type_table,
+                 'SHW/DHW Source': shw_dhw_source_table,
+                 'SHW/DHW Fuel': shw_dhw_fuel_table}
+    check_table = {'Exhaust Fans': (exhaust_fans_none, exhaust_fans_table),
+                   'Cooling Source': (cooling_source_none, cooling_source_table),
+                   'Heating Source': (heating_source_none, heating_source_table)}
     for tablename, checkboxes in big_table.items():
         table = []
         for name in checkboxes:
@@ -1010,7 +1026,7 @@ def read_L2_hvac(worksheet):
             elif name in ['Check Box 45', 'Check Box 46']:
                 prefix = 'Direct fired - '
             if worksheet.controls[name].checked:
-                table.append(prefix+worksheet.controls[name].text)
+                table.append(prefix + worksheet.controls[name].text)
         if table:
             info[tablename] = table
     for tablename, value in check_table.items():
@@ -1024,21 +1040,21 @@ def read_L2_hvac(worksheet):
             info[tablename] = table
     # Handle the entry textboxes
     if 'Cooling Source' in info:
-        for i,el in enumerate(info['Cooling Source']):
+        for i, el in enumerate(info['Cooling Source']):
             if el.startswith('Other'):
                 if cooling_source_other in worksheet.textboxes:
                     info['Cooling Source'][i] = 'Other (%s)' % worksheet.textboxes[cooling_source_other]
                 else:
                     info['Cooling Source'][i] = 'Other (Unspecified)'
     if 'Heating Fuel' in info:
-        for i,el in enumerate(info['Heating Fuel']):
+        for i, el in enumerate(info['Heating Fuel']):
             if el.startswith('Oil'):
                 if heating_fuel_oil_grade in worksheet.textboxes:
                     info['Heating Fuel'][i] = 'Oil (%s)' % worksheet.textboxes[heating_fuel_oil_grade]
                 else:
                     info['Heating Fuel'][i] = 'Oil (Unspecified Grade)'
     if 'SHW/DHW Fuel' in info:
-        for i,el in enumerate(info['SHW/DHW Fuel']):
+        for i, el in enumerate(info['SHW/DHW Fuel']):
             if el.startswith('Oil'):
                 if shw_dhw_fuel_oil_grade in worksheet.textboxes:
                     info['SHW/DHW Fuel'][i] = 'Oil (%s)' % worksheet.textboxes[shw_dhw_fuel_oil_grade]
@@ -1051,6 +1067,7 @@ def read_L2_hvac(worksheet):
                     info['SHW/DHW Fuel'][i] = 'Other (Unspecified)'
     return info
 
+
 def read_L2_equipment_inventory(worksheet):
     # Look for "ID" in the first column
     cellcol, cellrow = scan_for_cell_value(worksheet, mincol=1, minrow=2,
@@ -1059,19 +1076,20 @@ def read_L2_equipment_inventory(worksheet):
     # The labels we expect
     expected = ['ID', 'Description', 'Location', 'Type', 'Units',
                 'Rated efficiency (as applicable)', 'Output Capacity',
-                'Area Served', 'Approx Year Installed',	'Condition       (excellent, good, average, poor)']
+                'Area Served', 'Approx Year Installed', 'Condition       (excellent, good, average, poor)']
 
     # Check the labels
     labels = cellrange(worksheet, mincol=cellcol, minrow=cellrow,
-                       maxcol=cellcol+len(expected)-1,
+                       maxcol=cellcol + len(expected) - 1,
                        maxrow=cellrow)
     if labels != expected:
         raise LabelMismatch('Mismatch in equipment inventory labels')
-    inventory = getinfo(worksheet, [cellcol, cellrow+1,
-                                   cellcol+len(labels)-1,
-                                   None], variablelength=True,
+    inventory = getinfo(worksheet, [cellcol, cellrow + 1,
+                                    cellcol + len(labels) - 1,
+                                    None], variablelength=True,
                         inrows=True, keepemptycells=False, labels=labels)
     return inventory
+
 
 lighting_sources_labels = ['Lighting Source Type(s)',
                            'Ballast Type(s)',
@@ -1094,33 +1112,33 @@ def read_L2_lighting(worksheet):
 
     # Check the labels
     labels = cellrange(worksheet, mincol=cellcol, minrow=cellrow,
-                       maxcol=cellcol+len(lighting_sources_labels)-1,
+                       maxcol=cellcol + len(lighting_sources_labels) - 1,
                        maxrow=cellrow)
     if labels != lighting_sources_labels:
         raise LabelMismatch('Mismatch in lighting source labels')
-    lighting = getinfo(worksheet, [cellcol, cellrow+1,
-                                   cellcol+len(lighting_sources_labels)-1,
+    lighting = getinfo(worksheet, [cellcol, cellrow + 1,
+                                   cellcol + len(lighting_sources_labels) - 1,
                                    None], variablelength=True,
                        inrows=True, labels=lighting_sources_labels)
     # Lood for 'Major Process/Plug Load Type(s)**' in the first column
     # This is another table with merged columns
-    cellcol, cellrow = scan_for_cell_value(worksheet, mincol=1, minrow=cellrow+1,
+    cellcol, cellrow = scan_for_cell_value(worksheet, mincol=1, minrow=cellrow + 1,
                                            maxcol=1,
                                            value='Major Process/Plug Load Type(s)**')
     labels = cellrange(worksheet, mincol=cellcol, minrow=cellrow,
-                       maxcol=cellcol+len(load_labels)-1,
+                       maxcol=cellcol + len(load_labels) - 1,
                        maxrow=cellrow)
     if labels != load_labels:
         raise LabelMismatch('Mismatch in process/plug load labels')
-    loads = getinfo(worksheet, [cellcol, cellrow+1,
-                                cellcol+len(load_labels)-1,
+    loads = getinfo(worksheet, [cellcol, cellrow + 1,
+                                cellcol + len(load_labels) - 1,
                                 None], variablelength=True,
-                       inrows=True, labels=load_labels)
-    return {'Lighting Source Type(s)':lighting,
-            'Major Process/Plug Load Type(s)**':loads}
+                    inrows=True, labels=load_labels)
+    return {'Lighting Source Type(s)': lighting,
+            'Major Process/Plug Load Type(s)**': loads}
+
 
 def read_L2_eem_summary(worksheet):
-
     labels = ['Description', 'Energy Cost Savings', 'Non-energy Cost Savings', 'Peak Demand Savings (kW)',
               'Utility #1', 'Utility #2', 'Utility #3', 'Delivered Energy',
               'Measure Cost', 'Potential Incentives', 'Measure Life (years)']
@@ -1134,13 +1152,14 @@ def read_L2_eem_summary(worksheet):
     col2, row2 = scan_for_cell_value(worksheet, mincol=1, minrow=15,
                                      maxcol=1, value='TOTALS (Recommended Measures)')
     # Get the first table
-    lowcost = getinfo(worksheet, [0, row0+1, len(labels), row1-1], labels=labels)
+    lowcost = getinfo(worksheet, [0, row0 + 1, len(labels), row1 - 1], labels=labels)
     # Get the second table
-    potentialcapital = getinfo(worksheet, [0, row1+1, len(labels), row2-1],
+    potentialcapital = getinfo(worksheet, [0, row1 + 1, len(labels), row2 - 1],
                                labels=labels)
 
-    return {'Low-Cost and No-Cost Recommendations' : lowcost,
-            'Potential Capital Recommendations' : potentialcapital}
+    return {'Low-Cost and No-Cost Recommendations': lowcost,
+            'Potential Capital Recommendations': potentialcapital}
+
 
 def read_std211_xls(workbook, IP=True):
     ''' Read Standard 211 information from an Excel workbook into a dictionary '''
@@ -1157,7 +1176,7 @@ def read_std211_xls(workbook, IP=True):
     # Read the 'L1 - EEM Summary' sheet
     std211['L1 - EEM Summary'] = read_L1_eem_summary(workbook['L1 - EEM Summary'])
     # Read the 'L2 - Envelope' sheet
-    std211['L2 - Envelope'] = read_L2_envelope(workbook['L2 - Envelope'],IP=IP)
+    std211['L2 - Envelope'] = read_L2_envelope(workbook['L2 - Envelope'], IP=IP)
     # Read the 'L2 - HVAC' sheet
     std211['L2 - HVAC'] = read_L2_hvac(workbook['L2 - HVAC'])
     # Read the 'L2 - Equipment Inventory' sheet
@@ -1169,21 +1188,23 @@ def read_std211_xls(workbook, IP=True):
     # Done!
     return std211
 
+
 def process_zip(pc):
     separators = ['-', ' ']
     for sep in separators:
-        five,guido,four = pc.partition('-')
+        five, guido, four = pc.partition('-')
         five = five.strip()
         four = four.strip()
         if len(five) != 5 or len(four) != 4:
             continue
         # Check for numbers?
-        return five,four
-    return pc,None
+        return five, four
+    return pc, None
 
-def determine_frequency(start,end):
+
+def determine_frequency(start, end):
     frequency = 'Other'
-    delta = end-start
+    delta = end - start
     leapadd = 0
     quarteradd = 0
     try:
@@ -1201,10 +1222,10 @@ def determine_frequency(start,end):
             try:
                 frequency = {30: 'Month',
                              31: 'Month',
-                             89+leapadd: 'Quarter',
-                             90+leapadd: 'Quarter',
-                             364+leapadd: 'Annual',
-                             365+leapadd: 'Annual'}[delta.days]
+                             89 + leapadd: 'Quarter',
+                             90 + leapadd: 'Quarter',
+                             364 + leapadd: 'Annual',
+                             365 + leapadd: 'Annual'}[delta.days]
             except KeyError:
                 pass
         if start.month == 2:
@@ -1212,103 +1233,104 @@ def determine_frequency(start,end):
                 if start.day < 29:
                     leapadd = 1
             try:
-                frequency = {27+leapadd: 'Month',
-                             28+leapadd: 'Month',
-                             88+leapadd: 'Quarter',
-                             89+leapadd: 'Quarter',
-                             364+leapadd: 'Annual',
-                             365+leapadd: 'Annual'}[delta.days]
+                frequency = {27 + leapadd: 'Month',
+                             28 + leapadd: 'Month',
+                             88 + leapadd: 'Quarter',
+                             89 + leapadd: 'Quarter',
+                             364 + leapadd: 'Annual',
+                             365 + leapadd: 'Annual'}[delta.days]
             except KeyError:
                 pass
         elif start.month in [3, 5, 7, 8]:
-            if calendar.isleap(start.year+1):
+            if calendar.isleap(start.year + 1):
                 leapadd = 1
             try:
                 frequency = {30: 'Month',
                              31: 'Month',
                              91: 'Quarter',
                              92: 'Quarter',
-                             364+leapadd: 'Annual',
-                             365+leapadd: 'Annual'}[delta.days]
+                             364 + leapadd: 'Annual',
+                             365 + leapadd: 'Annual'}[delta.days]
             except KeyError:
                 pass
         elif start.month in [4, 9]:
-            if calendar.isleap(start.year+1):
+            if calendar.isleap(start.year + 1):
                 leapadd = 1
             try:
                 frequency = {29: 'Month',
                              30: 'Month',
                              90: 'Quarter',
                              91: 'Quarter',
-                             364+leapadd: 'Annual',
-                             365+leapadd: 'Annual'}[delta.days]
+                             364 + leapadd: 'Annual',
+                             365 + leapadd: 'Annual'}[delta.days]
             except KeyError:
                 pass
         elif start.month == 6:
-            if calendar.isleap(start.year+1):
+            if calendar.isleap(start.year + 1):
                 leapadd = 1
             try:
                 frequency = {29: 'Month',
                              30: 'Month',
                              91: 'Quarter',
                              92: 'Quarter',
-                             364+leapadd: 'Annual',
-                             365+leapadd: 'Annual'}[delta.days]
+                             364 + leapadd: 'Annual',
+                             365 + leapadd: 'Annual'}[delta.days]
             except KeyError:
                 pass
         elif start.month == 10:
-            if calendar.isleap(start.year+1):
+            if calendar.isleap(start.year + 1):
                 leapadd = 1
             try:
                 frequency = {30: 'Month',
                              31: 'Month',
                              91: 'Quarter',
                              92: 'Quarter',
-                             364+leapadd: 'Annual',
-                             365+leapadd: 'Annual'}[delta.days]
+                             364 + leapadd: 'Annual',
+                             365 + leapadd: 'Annual'}[delta.days]
             except KeyError:
                 pass
         elif start.month == 11:
-            if calendar.isleap(start.year+1):
+            if calendar.isleap(start.year + 1):
                 leapadd = 1
                 if start.day > 28:
                     quarteradd = 1
             try:
                 frequency = {29: 'Month',
                              30: 'Month',
-                             91+quarteradd: 'Quarter',
-                             92+quarteradd: 'Quarter',
-                             364+leapadd: 'Annual',
-                             365+leapadd: 'Annual'}[delta.days]
+                             91 + quarteradd: 'Quarter',
+                             92 + quarteradd: 'Quarter',
+                             364 + leapadd: 'Annual',
+                             365 + leapadd: 'Annual'}[delta.days]
             except KeyError:
                 pass
-        else: #if start.month == 12:
-            if calendar.isleap(start.year+1):
+        else:  # if start.month == 12:
+            if calendar.isleap(start.year + 1):
                 leapadd = 1
             try:
                 frequency = {30: 'Month',
                              31: 'Month',
-                             89+leapadd: 'Quarter',
-                             90+leapadd: 'Quarter',
-                             364+leapadd: 'Annual',
-                             365+leapadd: 'Annual'}[delta.days]
+                             89 + leapadd: 'Quarter',
+                             90 + leapadd: 'Quarter',
+                             364 + leapadd: 'Annual',
+                             365 + leapadd: 'Annual'}[delta.days]
             except KeyError:
                 pass
     return frequency
+
 
 def bsxml_lighting_system_lookup(src_type):
     lamp_type = et.Element('LampType')
     if src_type == 'CFL':
         et.SubElement(lamp_type, 'CompactFluorescent')
-    elif src_type == 'Fluorescent T5/High output T5': # Meh
+    elif src_type == 'Fluorescent T5/High output T5':  # Meh
         el = et.SubElement(lamp_type, 'LinearFluorescent')
         el = et.SubElement(el, 'LampLabel')
         el.text = 'T5'
-    elif src_type == 'Fluorescent T8/Super T8': # Meh
+    elif src_type == 'Fluorescent T8/Super T8':  # Meh
         el = et.SubElement(lamp_type, 'LinearFluorescent')
         el = et.SubElement(el, 'LampLabel')
         el.text = 'T8'
-    elif src_type == 'Fluorescent T12/High output T12': # Meh
+    elif src_type == 'Fluorescent T12/High output T12':  # Meh
         el = et.SubElement(lamp_type, 'LinearFluorescent')
         el = et.SubElement(el, 'LampLabel')
         el.text = 'T12'
@@ -1317,7 +1339,7 @@ def bsxml_lighting_system_lookup(src_type):
         el = et.SubElement(el, 'LampLabel')
         el.text = 'Sodium Vapor High Pressure'
     elif src_type == 'Incandescent/Halogen':
-        et.SubElement(lamp_type, 'Halogen') # Meh
+        et.SubElement(lamp_type, 'Halogen')  # Meh
     elif src_type == 'Induction':
         et.SubElement(lamp_type, 'Induction')
     elif src_type == 'LED':
@@ -1332,9 +1354,10 @@ def bsxml_lighting_system_lookup(src_type):
         el = et.SubElement(lamp_type, 'HighIntensityDischarge')
         el = et.SubElement(el, 'LampLabel')
         el.text = 'Metal Halide'
-    else: #src_type == 'Other':
+    else:  # src_type == 'Other':
         et.SubElement(lamp_type, 'Unknown')
     return lamp_type
+
 
 def bsxml_lighting_control_lookup(control_type):
     control = None
@@ -1345,20 +1368,20 @@ def bsxml_lighting_control_lookup(control_type):
         control = et.Element('LightingControlTypeOccupancy')
         control.text = 'Unknown'
     elif control_type == 'Photocell':
-        control = et.Element('LightingControlTypeDaylighting') # Meh
+        control = et.Element('LightingControlTypeDaylighting')  # Meh
         control.text = 'Unknown'
     elif control_type == 'Timer':
         control = et.Element('LightingControlTypeTimer')
         control.text = 'Unknown'
-    #elif control_type == 'BAS':
-    #elif control_type == 'Advanced':
-    #elif control_type == 'Other':
+    # elif control_type == 'BAS':
+    # elif control_type == 'Advanced':
+    # elif control_type == 'Other':
     return control
-    
 
 
 def prettystring(element):
     return minidom.parseString(et.tostring(element, encoding='utf-8')).toprettyxml(indent='\t', encoding='utf-8')
+
 
 def easymap(dictionary, inkey, outkey, parent, f=lambda x: x):
     if inkey in dictionary:
@@ -1366,19 +1389,22 @@ def easymap(dictionary, inkey, outkey, parent, f=lambda x: x):
             el = et.SubElement(parent, outkey)
             el.text = f(dictionary[inkey])
 
+
 def easyremap(dictionary, inkey, outkey, parent, remap, f=lambda x: x):
     if inkey in dictionary:
         if dictionary[inkey]:
             el = et.SubElement(parent, outkey)
             el.text = f(remap[dictionary[inkey]])
 
+
 def addel(outkey, parent, value):
     el = et.SubElement(parent, outkey)
-    el.text = value
+    el.text = str(value)
+
 
 def addudf(parent, key, value, create=True):
     udfs = parent.find('UserDefinedFields')
-    if not udfs:
+    if udfs is None:
         if not create:
             return
         udfs = et.SubElement(parent, 'UserDefinedFields')
@@ -1388,32 +1414,38 @@ def addudf(parent, key, value, create=True):
     el = et.SubElement(udf, 'FieldValue')
     el.text = value
 
+
 def appendudf(udfs, key, dictionary, prefix=None):
     if key in dictionary:
         udf = et.SubElement(udfs, 'UserDefinedField')
         el = et.SubElement(udf, 'FieldName')
         store_key = key
         if prefix:
-            store_key = prefix+key
+            store_key = prefix + key
         el.text = store_key
         el = et.SubElement(udf, 'FieldValue')
         el.text = str(dictionary[key])
+
 
 def easymapudf(dictionary, inkey, outkey, parent, f=lambda x: x):
     if inkey in dictionary and dictionary[inkey]:
         addudf(parent, outkey, f(dictionary[inkey]))
 
+
 def yn2tf(s):
-    return {'Y':'true', 'N':'false'}[s]
+    return {'Y': 'true', 'N': 'false'}[s]
+
 
 def repercentage(s):
-    return str(s*100)+'%'
+    return str(s * 100) + '%'
+
 
 def bsxml_condition_lookup(condition):
     return {'excellent': 'Excellent',
             'good': 'Good',
             'average': 'Average',
             'poor': 'Poor'}.get(condition.lower(), 'Other')
+
 
 def bsxml_capacity_units_lookup(units):
     return {"cfh": "cfh",
@@ -1442,14 +1474,16 @@ def bsxml_capacity_units_lookup(units):
             "tons": "Cooling ton",
             "ton": "Cooling ton"}.get(units.lower(), 'Other')
 
+
 def map_equipment_inventory(inventory):
     hvacsystems = []
     heatrecoverysystems = []
 
     items = ['Description', 'Location', 'Type', 'Units', 'Rated efficiency (as applicable)',
-             'Output Capacity', 'Area Served', 'Approx Year Installed', 'Condition       (excellent, good, average, poor)']
+             'Output Capacity', 'Area Served', 'Approx Year Installed',
+             'Condition       (excellent, good, average, poor)']
 
-    for name,data in inventory.items():
+    for name, data in inventory.items():
         if not 'Type' in data:
             # Could try something else here, but skip for now
             continue
@@ -1458,7 +1492,8 @@ def map_equipment_inventory(inventory):
             system.attrib['ID'] = name
             el = et.SubElement(system, 'Plants')
             el = et.SubElement(el, 'HeatingPlant')
-            easymap(data, 'Condition       (excellent, good, average, poor)', 'HeatingPlantCondition', el, bsxml_condition_lookup)
+            easymap(data, 'Condition       (excellent, good, average, poor)', 'HeatingPlantCondition', el,
+                    bsxml_condition_lookup)
             items = ['Description', 'Location', 'Units', 'Rated efficiency (as applicable)',
                      'Output Capacity', 'Area Served', 'Approx Year Installed']
             for item in items:
@@ -1469,7 +1504,8 @@ def map_equipment_inventory(inventory):
             system.attrib['ID'] = name
             el = et.SubElement(system, 'Plants')
             el = et.SubElement(el, 'CoolingPlant')
-            easymap(data, 'Condition       (excellent, good, average, poor)', 'CoolingPlantCondition', el, bsxml_condition_lookup)
+            easymap(data, 'Condition       (excellent, good, average, poor)', 'CoolingPlantCondition', el,
+                    bsxml_condition_lookup)
             items = ['Description', 'Location', 'Units', 'Rated efficiency (as applicable)',
                      'Output Capacity', 'Area Served', 'Approx Year Installed']
             for item in items:
@@ -1485,14 +1521,15 @@ def map_equipment_inventory(inventory):
             easymap(data, 'Output Capacity', 'OutputCapacity', el, str)
             easymap(data, 'Units', 'CapacityUnits', el, bsxml_capacity_units_lookup)
             easymap(data, 'Rated efficiency (as applicable)', 'ThermalEfficiency', el, str)
-            
-            easymap(data, 'Condition       (excellent, good, average, poor)', 'HeatingPlantCondition', hp, bsxml_condition_lookup)
+
+            easymap(data, 'Condition       (excellent, good, average, poor)', 'HeatingPlantCondition', hp,
+                    bsxml_condition_lookup)
             items = ['Description', 'Location', 'Area Served', 'Approx Year Installed']
             for item in items:
                 easymapudf(data, item, 'ASHRAE Std 211 %s' % item, system, str)
             hvacsystems.append(system)
         elif data['Type'] in ['Cooling Delivery Type', 'Heating Delivery Type']:
-            typestring = data['Type'].replace(' Type','')
+            typestring = data['Type'].replace(' Type', '')
             system = et.Element('HVACSystem')
             system.attrib['ID'] = name
             el = et.SubElement(system, 'HeatingAndCoolingSystems')
@@ -1503,7 +1540,7 @@ def map_equipment_inventory(inventory):
             easymap(data, 'Approx Year Installed', 'YearInstalled', el, str)
 
             addudf(system, 'ASHRAE Std 211 Type', typestring)
-            
+
             items = ['Description', 'Location', 'Rated efficiency (as applicable)',
                      'Area Served', 'Condition       (excellent, good, average, poor)']
             for item in items:
@@ -1515,13 +1552,13 @@ def map_equipment_inventory(inventory):
 
             easymap(data, 'Rated efficiency (as applicable)', 'HeatRecoveryEfficiency', el, str)
             easymap(data, 'Approx Year Installed', 'YearInstalled', el, str)
-            
+
             items = ['Description', 'Location', 'Units', 'Output Capacity', 'Area Served',
                      'Condition       (excellent, good, average, poor)']
             for item in items:
                 easymapudf(data, item, 'ASHRAE Std 211 %s' % item, system, str)
             heatrecoverysystems.append(system)
-        else: #elif data['Type'] == 'DX System Type':
+        else:  # elif data['Type'] == 'DX System Type':
             system = et.Element('HVACSystem')
             system.attrib['ID'] = name
             el = et.SubElement(system, 'HeatingAndCoolingSystems')
@@ -1532,7 +1569,7 @@ def map_equipment_inventory(inventory):
             easymap(data, 'Output Capacity', 'Capacity', cs, str)
             easymap(data, 'Units', 'CapacityUnits', cs, bsxml_capacity_units_lookup)
             easymap(data, 'Approx Year Installed', 'YearInstalled', cs, str)
-            
+
             items = ['Description', 'Location', 'Rated efficiency (as applicable)',
                      'Area Served', 'Condition       (excellent, good, average, poor)']
             for item in items:
@@ -1637,7 +1674,7 @@ def map_to_buildingsync(obj, groupspaces=False):
         if 'Number of Dwelling Units in Building (Multifamily Only)' in occupancy:
             units = et.SubElement(facility, 'SpatialUnits')
             addel('SpatialUnitType', units, 'Apartment units')
-            addel('NumberOfUnits', units, str(occupancy['Number of Dwelling Units in Building (Multifamily Only)']))           
+            addel('NumberOfUnits', units, str(occupancy['Number of Dwelling Units in Building (Multifamily Only)']))
 
     easymap(allbuilding, 'Conditioned Floors Above grade',
             'ConditionedFloorsAboveGrade', facility, f=str)
@@ -1684,7 +1721,7 @@ def map_to_buildingsync(obj, groupspaces=False):
     #
     # All - Space Functions
     #
-    #subsections = et.Element('Subsections')
+    # subsections = et.Element('Subsections')
     spaces = []
     phvac = {}
     nohvac = []
@@ -1828,7 +1865,7 @@ def map_to_buildingsync(obj, groupspaces=False):
     if 'Lighting Source Type(s)' in lighting_plug_loads:
         num = 1
         sources = []
-        for src_type,src in lighting_plug_loads['Lighting Source Type(s)'].items():
+        for src_type, src in lighting_plug_loads['Lighting Source Type(s)'].items():
             source = et.Element('LightingSystem')
             source.attrib['ID'] = 'LightingSystem%d' % num
             num += 1
@@ -1851,7 +1888,7 @@ def map_to_buildingsync(obj, groupspaces=False):
     if 'Major Process/Plug Load Type(s)**' in lighting_plug_loads:
         num = 1
         loads = []
-        for ld_type,ld in lighting_plug_loads['Major Process/Plug Load Type(s)**'].items():
+        for ld_type, ld in lighting_plug_loads['Major Process/Plug Load Type(s)**'].items():
             load = et.Element('PlugLoad')
             addudf(load, 'ASHRAE Std 211 Major Process/Plug Load Type(s)', ld_type)
             easymapudf(ld, 'Key Operational Details***', 'ASHRAE Std 211 Key Operational Details', load)
@@ -1860,17 +1897,17 @@ def map_to_buildingsync(obj, groupspaces=False):
             plugloads = et.Element('PlugLoads')
             for load in loads:
                 plugloads.append(load)
-    
+
     # Handle sides
     if ('Total exposed above grade wall area (sq ft)' in envelope or
-        'Total exposed above grade wall area R value' in envelope or
-        'Glazing area, approx % of exposed wall area [10, 25, 50, 75, 90, 100]*' in envelope or
-        'Wall Constructions' in envelope or
-        'Fenestration Frame Types' in envelope or
-        'Fenestration Glass Types' in envelope or
-        'Fenestration Seal Condition' in envelope):
+            'Total exposed above grade wall area R value' in envelope or
+            'Glazing area, approx % of exposed wall area [10, 25, 50, 75, 90, 100]*' in envelope or
+            'Wall Constructions' in envelope or
+            'Fenestration Frame Types' in envelope or
+            'Fenestration Glass Types' in envelope or
+            'Fenestration Seal Condition' in envelope):
         # Something is there to put in sides, make what we need
-        if not subsection:
+        if subsection is None:
             subsections = et.SubElement(facility, 'Subsections')
             subsection = et.SubElement(subsections, 'Subsection')
         sides = et.SubElement(subsection, 'Sides')
@@ -1878,9 +1915,9 @@ def map_to_buildingsync(obj, groupspaces=False):
         # Make a wall system if needed
         wallsystem = None
         if ('Total exposed above grade wall area (sq ft)' in envelope or
-            'Total exposed above grade wall area R value' in envelope or
-            'Glazing area, approx % of exposed wall area [10, 25, 50, 75, 90, 100]*' in envelope or
-            'Wall Constructions' in envelope):
+                'Total exposed above grade wall area R value' in envelope or
+                'Glazing area, approx % of exposed wall area [10, 25, 50, 75, 90, 100]*' in envelope or
+                'Wall Constructions' in envelope):
             wallsystems = et.Element('WallSystems')
             wallsystem = et.SubElement(wallsystems, 'WallSystem')
             wallsystem.attrib['ID'] = 'Wall1'
@@ -1891,7 +1928,7 @@ def map_to_buildingsync(obj, groupspaces=False):
         # Make window stuff
         fenestrationsystem = None
         if ('Fenestration Frame Types' in envelope or
-            'Fenestration Glass Types' in envelope):
+                'Fenestration Glass Types' in envelope):
             fenestrationsystems = et.Element('FenestrationSystems')
             fenestrationsystem = et.SubElement(fenestrationsystems, 'FenestrationSystem')
             fenestrationsystem.attrib['ID'] = 'Fenestration1'
@@ -1908,13 +1945,13 @@ def map_to_buildingsync(obj, groupspaces=False):
                        'ASHRAE Standard 211 Description of Exterior doors',
                        fenestrationsystem)
         # Fill in the side information
-        if wallsystem:
+        if wallsystem is not None:
             wallid = et.SubElement(side, 'WallID')
             wallid.attrib['IDref'] = wallsystem.attrib['ID']
             if 'Total exposed above grade wall area (sq ft)' in envelope:
-                addel('WallArea',wallid,
+                addel('WallArea', wallid,
                       str(envelope['Total exposed above grade wall area (sq ft)']))
-        if fenestrationsystem:
+        if fenestrationsystem is not None:
             windowid = et.SubElement(side, 'WindowID')
             windowid.attrib['IDref'] = fenestrationsystem.attrib['ID']
             if 'Glazing area, approx % of exposed wall area [10, 25, 50, 75, 90, 100]*' in envelope:
@@ -1922,10 +1959,10 @@ def map_to_buildingsync(obj, groupspaces=False):
                       str(envelope['Glazing area, approx % of exposed wall area [10, 25, 50, 75, 90, 100]*']))
     # Roof is next
     if ('Roof area (sq ft)' in envelope or
-        'Roof area R value' in envelope or
-        'Cool Roof (Y/N)' in envelope or
-        'Roof condition' in envelope or
-        'Roof Construction' in envelope):
+            'Roof area R value' in envelope or
+            'Cool Roof (Y/N)' in envelope or
+            'Roof condition' in envelope or
+            'Roof Construction' in envelope):
         roofsystems = et.Element('RoofSystems')
         roofsystem = et.SubElement(roofsystems, 'RoofSystem')
         roofsystem.attrib['ID'] = 'Roof1'
@@ -1945,7 +1982,7 @@ def map_to_buildingsync(obj, groupspaces=False):
     # Make a ceiling system if needed
     if 'Floor Construction' in envelope:
         if ('Steel joist' in envelope['Floor Construction'] or
-            'Wood frame' in envelope['Floor Construction']):
+                'Wood frame' in envelope['Floor Construction']):
             value = []
             if 'Steel joist' in envelope['Floor Construction']:
                 value = ['Steel joist']
@@ -1955,7 +1992,7 @@ def map_to_buildingsync(obj, groupspaces=False):
             ceilingsystems = et.Element('CeilingSystems')
             ceilingsystem = et.SubElement(ceilingsystems, 'CeilingSystem')
             ceilingsystem.attrib['ID'] = 'Ceiling1'
-            addudf(ceilingsystem, 'ASHRAE Standard 211 Floor Construction', 
+            addudf(ceilingsystem, 'ASHRAE Standard 211 Floor Construction',
                    str(value))
             ceilingid = et.SubElement(subsection, 'CeilingID')
             ceilingid.attrib['IDref'] = ceilingsystem.attrib['ID']
@@ -1963,7 +2000,7 @@ def map_to_buildingsync(obj, groupspaces=False):
     # Foundation systems
     foundationsystem = None
     if ('Foundation Type' in envelope or
-        'Floor Construction' in envelope):
+            'Floor Construction' in envelope):
         foundationsystems = et.Element('FoundationSystems')
         foundationsystem = et.SubElement(foundationsystems, 'FoundationSystem')
         foundationsystem.attrib['ID'] = 'Foundation1'
@@ -1975,24 +2012,26 @@ def map_to_buildingsync(obj, groupspaces=False):
                    foundationsystem, f=lambda x: ', '.join(x))
         foundationid = et.SubElement(subsection, 'FoundationID')
         foundationid.attrib['IDref'] = foundationsystem.attrib['ID']
-        
+
     # Map the UDFs from L2 - Envelope
     udfs = et.Element('UserDefinedFields')
-    appendudf(udfs, 'Below grade wall area (sq ft)', envelope, prefix = 'ASHRAE Standard 211 ')
-    appendudf(udfs, 'Below grade wall area (sq m)', envelope, prefix = 'ASHRAE Standard 211 ')
-    appendudf(udfs, 'Overall Enclosure Tightness Assessment', envelope, prefix = 'ASHRAE Standard 211 ')
-    appendudf(udfs, 'Description of Exterior doors**', envelope, prefix = 'ASHRAE Standard 211 ')
-    appendudf(udfs, 'Below grade wall area R value', envelope, prefix = 'ASHRAE Standard 211 ')
-    appendudf(udfs, 'Above grade wall common area with other conditioned buildings (ft2)', envelope, prefix = 'ASHRAE Standard 211 ')
-    appendudf(udfs, 'Above grade wall common area with other conditioned buildings (m2)', envelope, prefix = 'ASHRAE Standard 211 ')
-    #appendudf(udfs, 'Fenestration Seal Condition', envelope, prefix = 'ASHRAE Standard 211 ')
+    appendudf(udfs, 'Below grade wall area (sq ft)', envelope, prefix='ASHRAE Standard 211 ')
+    appendudf(udfs, 'Below grade wall area (sq m)', envelope, prefix='ASHRAE Standard 211 ')
+    appendudf(udfs, 'Overall Enclosure Tightness Assessment', envelope, prefix='ASHRAE Standard 211 ')
+    appendudf(udfs, 'Description of Exterior doors**', envelope, prefix='ASHRAE Standard 211 ')
+    appendudf(udfs, 'Below grade wall area R value', envelope, prefix='ASHRAE Standard 211 ')
+    appendudf(udfs, 'Above grade wall common area with other conditioned buildings (ft2)', envelope,
+              prefix='ASHRAE Standard 211 ')
+    appendudf(udfs, 'Above grade wall common area with other conditioned buildings (m2)', envelope,
+              prefix='ASHRAE Standard 211 ')
+    # appendudf(udfs, 'Fenestration Seal Condition', envelope, prefix = 'ASHRAE Standard 211 ')
 
     if len(udfs) > 0:
-        if not subsection:
+        if subsection is None:
             subsections = et.SubElement(facility, 'Subsections')
             subsection = et.SubElement(subsections, 'Subsection')
         subsection.append(udfs)
-    
+
     thermalzones = []
     if len(spaces) > 0:
         if groupspaces:
@@ -2016,11 +2055,11 @@ def map_to_buildingsync(obj, groupspaces=False):
                 tzspaces = et.SubElement(tz, 'Spaces')
                 tzspaces.append(space)
     if len(thermalzones) > 0:
-        if not subsection:
+        if subsection is None:
             subsections = et.SubElement(facility, 'Subsections')
             subsection = et.SubElement(subsections, 'Subsection')
         subsection.append(thermalzones)
-            
+
     # Now for the UDFs from All - Building
     easymapudf(allbuilding, 'Primary Building use type*',
                'ASHRAE Standard 211 Primary Building Use Type', facility)
@@ -2054,10 +2093,10 @@ def map_to_buildingsync(obj, groupspaces=False):
     resources = None
 
     if ('Energy Sources' in allbuilding
-        or 'Utility #1' in metered_energy
-        or 'Utility #2' in metered_energy
-        or 'Utility #3' in metered_energy
-        or delivered_energy != {}):
+            or 'Utility #1' in metered_energy
+            or 'Utility #2' in metered_energy
+            or 'Utility #3' in metered_energy
+            or delivered_energy != {}):
         scenarios = et.SubElement(report, 'Scenarios')
         scenario = et.SubElement(scenarios, 'Scenario')
         scenario.attrib['ID'] = 'ASHRAEStandard211Scenario'
@@ -2072,8 +2111,8 @@ def map_to_buildingsync(obj, groupspaces=False):
         for el in allbuilding['Energy Sources']:
             resource = et.Element('ResourceUse')
             # Nope, enum fail on both
-            #easymap(el, 'Energy Source', 'EnergyResource', resource)
-            #if 'Type' in el:
+            # easymap(el, 'Energy Source', 'EnergyResource', resource)
+            # if 'Type' in el:
             #    sub = et.SubElement(resource, 'Utility')
             #    sub = et.SubElement(sub, 'MeteringConfiguration')
             #    sub.text = el['Type']
@@ -2090,13 +2129,14 @@ def map_to_buildingsync(obj, groupspaces=False):
     for name in ['Utility #1', 'Utility #2', 'Utility #3']:
         if name in metered_energy:
             resource = et.Element('ResourceUse')
-            resource.attrib['ID'] = 'Std211ResourceUse'+name.replace(' #','')
+            resource.attrib['ID'] = 'Std211ResourceUse' + name.replace(' #', '')
             if metered_energy[name]['Definition']['Units'].startswith("=INDEX('Drop Down Lists'!"):
                 # Use default
                 metered_energy[name]['Definition']['Units'] = metered_energy_default_units[metered_energy[name]['Type']]
             if metered_energy[name]['Definition']['kBtu/unit'].startswith('=IFERROR(INDEX(EnergyConversionRates,MATCH'):
                 # Use default
-                metered_energy[name]['Definition']['kBtu/unit'] = str(conversion_to_kBtu[metered_energy[name]['Definition']['Units']])
+                metered_energy[name]['Definition']['kBtu/unit'] = str(
+                    conversion_to_kBtu[metered_energy[name]['Definition']['Units']])
             if metered_energy[name]['Type'] in metered_energy_type_lookup:
                 el = et.SubElement(resource, 'EnergyResource')
                 el.text = metered_energy_type_lookup[metered_energy[name]['Type']]
@@ -2108,7 +2148,7 @@ def map_to_buildingsync(obj, groupspaces=False):
             el = et.SubElement(resource, 'ResourceUnits')
             el.text = metered_energy_bsxml_units[metered_energy[name]['Type']]
             el = et.SubElement(resource, 'UtilityID')
-            el.attrib['IDref'] = 'Std211Metered'+name.replace(' #','')
+            el.attrib['IDref'] = 'Std211Metered' + name.replace(' #', '')
             easymapudf(metered_energy[name]['Definition'], 'kBtu/unit', 'ASHRAE Standard 211 kBtu/unit', resource)
             resources.append(resource)
 
@@ -2117,7 +2157,8 @@ def map_to_buildingsync(obj, groupspaces=False):
         resource.attrib['ID'] = 'Std211ResourceUseDelivered1'
         if delivered_energy['Definition']['Conversion to kBTU'].startswith("=IFERROR(INDEX("):
             # Use default
-            delivered_energy['Definition']['Conversion to kBTU'] = str(conversion_to_kBtu[delivered_energy['Definition']['Units']])
+            delivered_energy['Definition']['Conversion to kBTU'] = str(
+                conversion_to_kBtu[delivered_energy['Definition']['Units']])
         el = et.SubElement(resource, 'EnergyResource')
         fueltype = delivered_energy['Definition']['Delivered Energy Type (if applicable)']
         if fueltype == 'Oil':
@@ -2125,26 +2166,28 @@ def map_to_buildingsync(obj, groupspaces=False):
         el.text = fueltype
         el = et.SubElement(resource, 'ResourceUnits')
         el.text = bsxml_unit_lookup[delivered_energy['Definition']['Units']]
-        easymapudf(delivered_energy['Definition'], 'Conversion to kBTU', 'ASHRAE Standard 211 Conversion to kBTU', resource)
+        easymapudf(delivered_energy['Definition'], 'Conversion to kBTU', 'ASHRAE Standard 211 Conversion to kBTU',
+                   resource)
         if 'Estimated Annual Use**' in delivered_energy['Definition']:
-            easymapudf(delivered_energy['Definition'], 'Estimated Annual Use**', 'ASHRAE Standard 211 Estimated Annual Use', resource,
+            easymapudf(delivered_energy['Definition'], 'Estimated Annual Use**',
+                       'ASHRAE Standard 211 Estimated Annual Use', resource,
                        str)
         resources.append(resource)
 
     # Now the time series data
     datapoints = []
 
-    keys = {'Utility #1' : {'Use': 'Energy', 'Cost': 'Currency', 'Peak' : 'Energy'},
-            'Utility #2' : {'Use': 'Energy', 'Cost': 'Currency'},
-            'Utility #3' : {'Use': 'Energy', 'Cost': 'Currency'}}
+    keys = {'Utility #1': {'Use': 'Energy', 'Cost': 'Currency', 'Peak': 'Energy'},
+            'Utility #2': {'Use': 'Energy', 'Cost': 'Currency'},
+            'Utility #3': {'Use': 'Energy', 'Cost': 'Currency'}}
 
-    reading_type = {'Use' : 'Total',
-                    'Cost' : 'Total',
-                    'Peak' : 'Peak'}
+    reading_type = {'Use': 'Total',
+                    'Cost': 'Total',
+                    'Peak': 'Peak'}
 
     for name in ['Utility #1', 'Utility #2', 'Utility #3']:
         if name in metered_energy:
-            refname = 'Std211ResourceUse'+name.replace(' #','')
+            refname = 'Std211ResourceUse' + name.replace(' #', '')
             if 'Data' in metered_energy[name]:
                 for pt in metered_energy[name]['Data']:
                     start = pt['Start Date']
@@ -2192,8 +2235,8 @@ def map_to_buildingsync(obj, groupspaces=False):
         ts = et.SubElement(scenario, 'TimeSeriesData')
         for pt in datapoints:
             ts.append(pt)
-            
-    if len(scenario) > 0 and facility:
+
+    if len(scenario) > 0 and (facility is not None):
         link = et.SubElement(scenario, 'LinkedPremises')
         el = et.SubElement(link, 'Facility')
         el = et.SubElement(el, 'LinkedFacilityID')
@@ -2204,13 +2247,13 @@ def map_to_buildingsync(obj, groupspaces=False):
     for name in ['Utility #1', 'Utility #2', 'Utility #3']:
         if name in metered_energy:
             el = et.SubElement(utilities, 'Utility')
-            el.attrib['ID'] = 'Std211Metered'+name.replace(' #','')
+            el.attrib['ID'] = 'Std211Metered' + name.replace(' #', '')
             el = et.SubElement(el, 'UtilityName')
             el.text = name
     if len(utilities) > 0:
         report.append(utilities)
-            
-    if auditor:
+
+    if auditor is not None:
         el = et.SubElement(report, 'AuditorContactID')
         el.attrib['IDref'] = auditor.attrib['ID']
 
@@ -2294,11 +2337,11 @@ def map_to_buildingsync(obj, groupspaces=False):
 
             annual_by_fuels = et.Element('AnnualSavingsByFuels')
             utilnum = 1
-            for util_units, util_type in zip(utility_units,utility_types):
+            for util_units, util_type in zip(utility_units, utility_types):
                 if utilnum == 4:
                     header = 'Delivered Energy'
                 else:
-                    header = 'Utility #%d' % utilnum #util_type + ' [' + util_units +']'
+                    header = 'Utility #%d' % utilnum  # util_type + ' [' + util_units +']'
                 utilnum += 1
                 if header in value:
                     if value[header]:
@@ -2320,7 +2363,7 @@ def map_to_buildingsync(obj, groupspaces=False):
 
             easymap(value, 'Measure Life (years)', 'UsefulLife', measure, str)
             easymap(value, 'Measure Cost', 'MeasureTotalFirstCost', measure, str)
-            
+
             udfs = et.SubElement(measure, 'UserDefinedFields')
             for field in udf_fields:
                 if field in value:
@@ -2339,60 +2382,69 @@ def map_to_buildingsync(obj, groupspaces=False):
     #
     # Assemble the final result
     #
-    bsxml = et.Element('Audits')
-    bsxml.attrib['xmlns'] = "http://nrel.gov/schemas/bedes-auc/2014"
-    bsxml.attrib['xmlns:xsi'] = "http://www.w3.org/2001/XMLSchema-instance"
-    bsxml.attrib['xsi:schemaLocation'] = "http://nrel.gov/schemas/bedes-auc/2014 ../BuildingSync.xsd"
+    attr_qname = et.QName("http://www.w3.org/2001/XMLSchema-instance", "schemaLocation")
+    nsmap = {None: "http://nrel.gov/schemas/bedes-auc/2014",
+             'xsi': "http://www.w3.org/2001/XMLSchema-instance"}
+    bsxml = et.Element('Audits',
+                       {attr_qname: "http://nrel.gov/schemas/bedes-auc/2014 ../BuildingSync.xsd"},
+                       nsmap=nsmap)
+    # The following five lines are the original ElementTree version
+    # bsxml = et.Element('Audits')
+    # bsxml.attrib['xmlns'] = "http://nrel.gov/schemas/bedes-auc/2014"
+    # bsxml.attrib['xmlns:xsi'] = "http://www.w3.org/2001/XMLSchema-instance"
+    # bsxml.attrib['xsi:schemaLocation'] = "http://nrel.gov/schemas/bedes-auc/2014 ../BuildingSync.xsd"
     audit = et.SubElement(bsxml, 'Audit')
     # First is Sites
-    if address or keycontact or facilities:
+    if (address is not None) or (keycontact is not None) or (facilities is not None):
         sites = et.SubElement(audit, 'Sites')
         site = et.SubElement(sites, 'Site')
-        if address:
+        if address is not None:
             site.append(address)
-        if keycontact:
+        if keycontact is not None:
             pcid = et.SubElement(site, 'PrimaryContactID')
             pcid.text = keycontact.attrib['ID']
-        if facilities:
+        if facilities is not None:
             site.append(facilities)
     # Second is Systems
-    if (hvacsystems or lightingsystems or dhwsystems or heatrecoverysystems or wallsystems
-        or roofsystems or ceilingsystems or fenestrationsystems
-        or foundationsystems or plugloads):
+    if ((hvacsystems is not None) or (lightingsystems is not None) or (dhwsystems is not None)
+            or (heatrecoverysystems is not None) or (wallsystems is not None) or (roofsystems is not None)
+            or (ceilingsystems is not None) or (fenestrationsystems is not None) or (foundationsystems is not None)
+            or (plugloads is not None)):
         systems = et.SubElement(audit, 'Systems')
-        if hvacsystems:
+        if hvacsystems is not None:
             systems.append(hvacsystems)
-        if lightingsystems:
+        if lightingsystems is not None:
             systems.append(lightingsystems)
-        if dhwsystems:
+        if dhwsystems is not None:
             systems.append(dhwsystems)
-        if heatrecoverysystems:
+        if heatrecoverysystems is not None:
             systems.append(heatrecoverysystems)
-        if wallsystems:
+        if wallsystems is not None:
             systems.append(wallsystems)
-        if roofsystems:
+        if roofsystems is not None:
             systems.append(roofsystems)
-        if ceilingsystems:
+        if ceilingsystems is not None:
             systems.append(ceilingsystems)
-        if fenestrationsystems:
+        if fenestrationsystems is not None:
             systems.append(fenestrationsystems)
-        if foundationsystems:
+        if foundationsystems is not None:
             systems.append(foundationsystems)
-        if plugloads:
+        if plugloads is not None:
             systems.append(plugloads)
     # Next is Measures
-    if measures:
+    if measures is not None:
         audit.append(measures)
     # Now Reports
-    if report:
+    if report is not None:
         audit.append(report)
     # Last is Contacts
-    if contacts:
+    if contacts is not None:
         audit.append(contacts)
     # Done!  
     return bsxml
 
-def map_std211_xls_to_string(filename, verbose=False, groupspaces=False):
+
+def map_std211_xlsx_to_string(filename, verbose=False, groupspaces=False):
     if not os.path.exists(filename):
         raise Exception('File "%s" does not exist' % filename)
     if verbose:
@@ -2405,7 +2457,8 @@ def map_std211_xls_to_string(filename, verbose=False, groupspaces=False):
     bsxml = map_to_buildingsync(std211, groupspaces=groupspaces)
     return '<?xml version="1.0" encoding="UTF-8"?>' + et.tostring(bsxml, encoding='utf-8').decode('utf-8')
 
-def map_std211_xls_to_prettystring(filename, verbose=False, groupspaces=False):
+
+def map_std211_xlsx_to_prettystring(filename, verbose=False, groupspaces=False):
     if not os.path.exists(filename):
         raise Exception('File "%s" does not exist' % filename)
     if verbose:
@@ -2421,7 +2474,7 @@ def map_std211_xls_to_prettystring(filename, verbose=False, groupspaces=False):
 
 if __name__ == '__main__':
     import argparse
-    
+
     parser = argparse.ArgumentParser(description='Convert ASHRAE Std. 211 Workbook into BSXML.')
     parser.add_argument('infile', metavar='INFILE')
     parser.add_argument('-p', '--pretty', dest='pretty', action='store_true',
@@ -2445,7 +2498,7 @@ if __name__ == '__main__':
         warnings.simplefilter("ignore")
         wb = loadxl.load_workbook(args.infile)
         warnings.simplefilter("default")
-        
+
     std211 = read_std211_xls(wb)
     bsxml = map_to_buildingsync(std211, groupspaces=args.group)
     if args.verbose:
@@ -2457,4 +2510,3 @@ if __name__ == '__main__':
         fp.write('<?xml version="1.0" encoding="UTF-8"?>')
         fp.write(et.tostring(bsxml, encoding='utf-8').decode('utf-8'))
     fp.close()
-
