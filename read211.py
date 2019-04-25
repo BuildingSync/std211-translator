@@ -1602,13 +1602,12 @@ def map_equipment_inventory(inventory):
 def map_to_buildingsync(obj, groupspaces=False):
     """Map a dictionary of Standard 211 data into the BuildingSync XML object.
 
-    What happens here?
-
     :param obj: dictionary of Standard 211 data
     :param groupspaces: Boolean determining if spaces should be combined by HVAC type (defaults to False)
     :return: BuildingSync XML object (lxml.etree.ElemenTree)
 
-    How about this?
+    Map a dictionary of Standard 211 data, as extracted using the read_std211_xlsx
+    function, into an XML object. 
     """
     #
     allbuilding = obj['All - Building']
