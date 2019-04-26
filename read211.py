@@ -1161,7 +1161,7 @@ def read_L2_eem_summary(worksheet):
             'Potential Capital Recommendations': potentialcapital}
 
 
-def read_std211_xls(workbook, IP=True):
+def read_std211_xlsx(workbook, IP=True):
     ''' Read Standard 211 information from an Excel workbook into a dictionary '''
     std211 = {}
     #
@@ -1318,60 +1318,72 @@ def determine_frequency(start, end):
     return frequency
 
 
+def qualify(name):
+    return et.QName("http://buildingsync.net/schemas/bedes-auc/2019", name)
+
+
+def createSubElement(parent, name):
+    return et.SubElement(parent, et.QName("http://buildingsync.net/schemas/bedes-auc/2019", name))
+
+
+def createElement(name):
+    return et.Element(et.QName("http://buildingsync.net/schemas/bedes-auc/2019", name))
+
+
 def bsxml_lighting_system_lookup(src_type):
-    lamp_type = et.Element('LampType')
+    lamp_type = createElement('LampType')
     if src_type == 'CFL':
-        et.SubElement(lamp_type, 'CompactFluorescent')
+        createSubElement(lamp_type, 'CompactFluorescent')
     elif src_type == 'Fluorescent T5/High output T5':  # Meh
-        el = et.SubElement(lamp_type, 'LinearFluorescent')
-        el = et.SubElement(el, 'LampLabel')
+        el = createSubElement(lamp_type, 'LinearFluorescent')
+        el = createSubElement(el, 'LampLabel')
         el.text = 'T5'
     elif src_type == 'Fluorescent T8/Super T8':  # Meh
-        el = et.SubElement(lamp_type, 'LinearFluorescent')
-        el = et.SubElement(el, 'LampLabel')
+        el = createSubElement(lamp_type, 'LinearFluorescent')
+        el = createSubElement(el, 'LampLabel')
         el.text = 'T8'
     elif src_type == 'Fluorescent T12/High output T12':  # Meh
-        el = et.SubElement(lamp_type, 'LinearFluorescent')
-        el = et.SubElement(el, 'LampLabel')
+        el = createSubElement(lamp_type, 'LinearFluorescent')
+        el = createSubElement(el, 'LampLabel')
         el.text = 'T12'
     elif src_type == 'High pressure sodium':
-        el = et.SubElement(lamp_type, 'HighIntensityDischarge')
-        el = et.SubElement(el, 'LampLabel')
+        el = createSubElement(lamp_type, 'HighIntensityDischarge')
+        el = createSubElement(el, 'LampLabel')
         el.text = 'Sodium Vapor High Pressure'
     elif src_type == 'Incandescent/Halogen':
-        et.SubElement(lamp_type, 'Halogen')  # Meh
+        createSubElement(lamp_type, 'Halogen')  # Meh
     elif src_type == 'Induction':
-        et.SubElement(lamp_type, 'Induction')
+        createSubElement(lamp_type, 'Induction')
     elif src_type == 'LED':
-        el = et.SubElement(lamp_type, 'SolidStateLighting')
-        el = et.SubElement(el, 'LampLabel')
+        el = createSubElement(lamp_type, 'SolidStateLighting')
+        el = createSubElement(el, 'LampLabel')
         el.text = 'LED'
     elif src_type == 'Mercury vapor':
-        el = et.SubElement(lamp_type, 'HighIntensityDischarge')
-        el = et.SubElement(el, 'LampLabel')
+        el = createSubElement(lamp_type, 'HighIntensityDischarge')
+        el = createSubElement(el, 'LampLabel')
         el.text = 'Mercury Vapor'
     elif src_type == 'Metal halide':
-        el = et.SubElement(lamp_type, 'HighIntensityDischarge')
-        el = et.SubElement(el, 'LampLabel')
+        el = createSubElement(lamp_type, 'HighIntensityDischarge')
+        el = createSubElement(el, 'LampLabel')
         el.text = 'Metal Halide'
     else:  # src_type == 'Other':
-        et.SubElement(lamp_type, 'Unknown')
+        createSubElement(lamp_type, 'Unknown')
     return lamp_type
 
 
 def bsxml_lighting_control_lookup(control_type):
     control = None
     if control_type == 'Manual':
-        control = et.Element('LightingControlTypeManual')
+        control = createElement('LightingControlTypeManual')
         control.text = 'Unknown'
     elif control_type == 'Occupancy sensor':
-        control = et.Element('LightingControlTypeOccupancy')
+        control = createElement('LightingControlTypeOccupancy')
         control.text = 'Unknown'
     elif control_type == 'Photocell':
-        control = et.Element('LightingControlTypeDaylighting')  # Meh
+        control = createElement('LightingControlTypeDaylighting')  # Meh
         control.text = 'Unknown'
     elif control_type == 'Timer':
-        control = et.Element('LightingControlTypeTimer')
+        control = createElement('LightingControlTypeTimer')
         control.text = 'Unknown'
     # elif control_type == 'BAS':
     # elif control_type == 'Advanced':
@@ -1380,50 +1392,50 @@ def bsxml_lighting_control_lookup(control_type):
 
 
 def prettystring(element):
-    return minidom.parseString(et.tostring(element, encoding='utf-8')).toprettyxml(indent='\t', encoding='utf-8')
+    return minidom.parseString(et.tostring(element, encoding='utf-8')).toprettyxml(indent='  ', encoding='utf-8')
 
 
 def easymap(dictionary, inkey, outkey, parent, f=lambda x: x):
     if inkey in dictionary:
         if dictionary[inkey]:
-            el = et.SubElement(parent, outkey)
+            el = createSubElement(parent, outkey)
             el.text = f(dictionary[inkey])
 
 
 def easyremap(dictionary, inkey, outkey, parent, remap, f=lambda x: x):
     if inkey in dictionary:
         if dictionary[inkey]:
-            el = et.SubElement(parent, outkey)
+            el = createSubElement(parent, outkey)
             el.text = f(remap[dictionary[inkey]])
 
 
 def addel(outkey, parent, value):
-    el = et.SubElement(parent, outkey)
+    el = createSubElement(parent, outkey)
     el.text = str(value)
 
 
 def addudf(parent, key, value, create=True):
-    udfs = parent.find('UserDefinedFields')
+    udfs = parent.find(qualify('UserDefinedFields'))
     if udfs is None:
         if not create:
             return
-        udfs = et.SubElement(parent, 'UserDefinedFields')
-    udf = et.SubElement(udfs, 'UserDefinedField')
-    el = et.SubElement(udf, 'FieldName')
+        udfs = createSubElement(parent, 'UserDefinedFields')
+    udf = createSubElement(udfs, 'UserDefinedField')
+    el = createSubElement(udf, 'FieldName')
     el.text = key
-    el = et.SubElement(udf, 'FieldValue')
+    el = createSubElement(udf, 'FieldValue')
     el.text = value
 
 
 def appendudf(udfs, key, dictionary, prefix=None):
     if key in dictionary:
-        udf = et.SubElement(udfs, 'UserDefinedField')
-        el = et.SubElement(udf, 'FieldName')
+        udf = createSubElement(udfs, 'UserDefinedField')
+        el = createSubElement(udf, 'FieldName')
         store_key = key
         if prefix:
             store_key = prefix + key
         el.text = store_key
-        el = et.SubElement(udf, 'FieldValue')
+        el = createSubElement(udf, 'FieldValue')
         el.text = str(dictionary[key])
 
 
@@ -1488,10 +1500,10 @@ def map_equipment_inventory(inventory):
             # Could try something else here, but skip for now
             continue
         if data['Type'] == 'Heating Plant Type':
-            system = et.Element('HVACSystem')
+            system = createElement('HVACSystem')
             system.attrib['ID'] = name
-            el = et.SubElement(system, 'Plants')
-            el = et.SubElement(el, 'HeatingPlant')
+            el = createSubElement(system, 'Plants')
+            el = createSubElement(el, 'HeatingPlant')
             easymap(data, 'Condition       (excellent, good, average, poor)', 'HeatingPlantCondition', el,
                     bsxml_condition_lookup)
             items = ['Description', 'Location', 'Units', 'Rated efficiency (as applicable)',
@@ -1500,10 +1512,10 @@ def map_equipment_inventory(inventory):
                 easymapudf(data, item, 'ASHRAE Std 211 %s' % item, system, str)
             hvacsystems.append(system)
         elif data['Type'] == 'Cooling Plant Type':
-            system = et.Element('HVACSystem')
+            system = createElement('HVACSystem')
             system.attrib['ID'] = name
-            el = et.SubElement(system, 'Plants')
-            el = et.SubElement(el, 'CoolingPlant')
+            el = createSubElement(system, 'Plants')
+            el = createSubElement(el, 'CoolingPlant')
             easymap(data, 'Condition       (excellent, good, average, poor)', 'CoolingPlantCondition', el,
                     bsxml_condition_lookup)
             items = ['Description', 'Location', 'Units', 'Rated efficiency (as applicable)',
@@ -1512,11 +1524,11 @@ def map_equipment_inventory(inventory):
                 easymapudf(data, item, 'ASHRAE Std 211 %s' % item, system, str)
             hvacsystems.append(system)
         elif data['Type'] == 'Boiler Type':
-            system = et.Element('HVACSystem')
+            system = createElement('HVACSystem')
             system.attrib['ID'] = name
-            el = et.SubElement(system, 'Plants')
-            hp = et.SubElement(el, 'HeatingPlant')
-            el = et.SubElement(hp, 'Boiler')
+            el = createSubElement(system, 'Plants')
+            hp = createSubElement(el, 'HeatingPlant')
+            el = createSubElement(hp, 'Boiler')
 
             easymap(data, 'Output Capacity', 'OutputCapacity', el, str)
             easymap(data, 'Units', 'CapacityUnits', el, bsxml_capacity_units_lookup)
@@ -1530,10 +1542,10 @@ def map_equipment_inventory(inventory):
             hvacsystems.append(system)
         elif data['Type'] in ['Cooling Delivery Type', 'Heating Delivery Type']:
             typestring = data['Type'].replace(' Type', '')
-            system = et.Element('HVACSystem')
+            system = createElement('HVACSystem')
             system.attrib['ID'] = name
-            el = et.SubElement(system, 'HeatingAndCoolingSystems')
-            el = et.SubElement(el, 'Delivery')
+            el = createSubElement(system, 'HeatingAndCoolingSystems')
+            el = createSubElement(el, 'Delivery')
 
             easymap(data, 'Output Capacity', 'Capacity', el, str)
             easymap(data, 'Units', 'CapacityUnits', el, bsxml_capacity_units_lookup)
@@ -1547,7 +1559,7 @@ def map_equipment_inventory(inventory):
                 easymapudf(data, item, 'ASHRAE Std 211 %s' % item, system, str)
             hvacsystems.append(system)
         elif data['Type'] == 'Heat Recovery Type':
-            system = et.Element('HeatRecoverySystem')
+            system = createElement('HeatRecoverySystem')
             system.attrib['ID'] = name
 
             easymap(data, 'Rated efficiency (as applicable)', 'HeatRecoveryEfficiency', el, str)
@@ -1559,12 +1571,12 @@ def map_equipment_inventory(inventory):
                 easymapudf(data, item, 'ASHRAE Std 211 %s' % item, system, str)
             heatrecoverysystems.append(system)
         else:  # elif data['Type'] == 'DX System Type':
-            system = et.Element('HVACSystem')
+            system = createElement('HVACSystem')
             system.attrib['ID'] = name
-            el = et.SubElement(system, 'HeatingAndCoolingSystems')
-            cs = et.SubElement(el, 'CoolingSource')
-            el = et.SubElement(cs, 'CoolingSourceType')
-            et.SubElement(el, 'DX')
+            el = createSubElement(system, 'HeatingAndCoolingSystems')
+            cs = createSubElement(el, 'CoolingSource')
+            el = createSubElement(cs, 'CoolingSourceType')
+            createSubElement(el, 'DX')
 
             easymap(data, 'Output Capacity', 'Capacity', cs, str)
             easymap(data, 'Units', 'CapacityUnits', cs, bsxml_capacity_units_lookup)
@@ -1594,11 +1606,11 @@ def map_to_buildingsync(obj, groupspaces=False):
     # All - Building
     #
     # Give the address
-    address = et.Element('Address')
+    address = createElement('Address')
     if 'Street*' in allbuilding:
-        el = et.SubElement(address, 'StreetAddressDetail')
-        el = et.SubElement(el, 'Simplified')
-        el = et.SubElement(el, 'StreetAddress')
+        el = createSubElement(address, 'StreetAddressDetail')
+        el = createSubElement(el, 'Simplified')
+        el = createSubElement(el, 'StreetAddress')
         el.text = allbuilding['Street*']
     easymap(allbuilding, 'City*', 'City', address)
     easymap(allbuilding, 'State*', 'State', address)
@@ -1608,148 +1620,148 @@ def map_to_buildingsync(obj, groupspaces=False):
         postalcodeplus4 = postalcode
         if plus4:
             postalcodeplus4 += '-' + plus4
-        el = et.SubElement(address, 'PostalCode')
+        el = createSubElement(address, 'PostalCode')
         el.text = postalcode
-        el = et.SubElement(address, 'PostalCodePlus4')
+        el = createSubElement(address, 'PostalCodePlus4')
         el.text = postalcodeplus4
     # street address, city, state, zip5, zip5-4
     if len(address) == 0:
         address = None
     # Create contacts if they are present
-    contacts = et.Element('Contacts')
+    contacts = createElement('Contacts')
     auditor = None
     if 'Energy Auditor' in allbuilding:
-        auditor = et.SubElement(contacts, 'Contact')
+        auditor = createSubElement(contacts, 'Contact')
         auditor.attrib['ID'] = 'EnergyAuditor'
         addel('ContactRole', auditor, 'Energy Auditor')
         addel('ContactName', auditor, allbuilding['Energy Auditor'])
     keycontact = None
     if 'Key Contact' in allbuilding:
-        keycontact = et.SubElement(contacts, 'Contact')
+        keycontact = createSubElement(contacts, 'Contact')
         keycontact.attrib['ID'] = 'KeyContact'
         addel('ContactRole', keycontact, 'Other')
         addel('ContactName', keycontact, allbuilding['Key Contact'])
         addudf(keycontact, 'ASHRAE Standard 211 Role', 'Key Contact')
     if 'Client Name' in allbuilding:
-        client = et.SubElement(contacts, 'Contact')
+        client = createSubElement(contacts, 'Contact')
         client.attrib['ID'] = 'Client'
         addel('ContactRole', client, 'Other')
         addel('ContactName', client, allbuilding['Client Name'])
         addudf(client, 'ASHRAE Standard 211 Role', 'Client')
     if 'Building Owner' in allbuilding:
-        owner = et.SubElement(contacts, 'Contact')
+        owner = createSubElement(contacts, 'Contact')
         owner.attrib['ID'] = 'BuildingOwner'
         addel('ContactRole', owner, 'Other')
         addel('ContactName', owner, allbuilding['Building Owner'])
         addudf(owner, 'ASHRAE Standard 211 Role', 'Owner')
 
-    facilities = et.Element('Facilities')
-    facility = et.SubElement(facilities, 'Facility')
-    facility.attrib['ID'] = 'Building'
+    buildings = createElement('Buildings')
+    building = createSubElement(buildings, 'Building')
+    building.attrib['ID'] = 'Building'
 
-    easymap(allbuilding, 'Building Name*', 'PremisesName', facility)
-    easymap(allbuilding, 'Facility Description - Notable Conditions',
-            'PremisesNotes', facility)
+    easymap(allbuilding, 'Building Name*', 'PremisesName', building)
+    easymap(allbuilding, 'Building Description - Notable Conditions',
+            'PremisesNotes', building)
     # OccupancyClassification should go here, but it can't: the enums don't match
     if 'Occupancy' in allbuilding:
         occupancy = allbuilding['Occupancy']
         if 'Typical number of occupants (during occ hours)' in occupancy:
-            levels = et.SubElement(facility, 'OccupancyLevels')
-            level = et.SubElement(levels, 'OccupancyLevel')
+            levels = createSubElement(building, 'OccupancyLevels')
+            level = createSubElement(levels, 'OccupancyLevel')
             addel('OccupantQuantity', level,
                   str(occupancy['Typical number of occupants (during occ hours)']))
-        typicalocc = et.Element('TypicalOccupantUsages')
+        typicalocc = createElement('TypicalOccupantUsages')
         if 'Typical occupancy (hours/week)' in occupancy:
-            occ = et.SubElement(typicalocc, 'TypicalOccupantUsage')
+            occ = createSubElement(typicalocc, 'TypicalOccupantUsage')
             addel('TypicalOccupantUsageValue', occ,
                   str(occupancy['Typical occupancy (hours/week)']))
             addel('TypicalOccupantUsageUnits', occ, 'Hours per week')
         if 'Typical occupancy (weeks/year)' in occupancy:
-            occ = et.SubElement(typicalocc, 'TypicalOccupantUsage')
+            occ = createSubElement(typicalocc, 'TypicalOccupantUsage')
             addel('TypicalOccupantUsageValue', occ,
                   str(occupancy['Typical occupancy (weeks/year)']))
             addel('TypicalOccupantUsageUnits', occ, 'Weeks per year')
         if len(typicalocc) > 0:
-            facility.append(typicalocc)
+            building.append(typicalocc)
         if 'Number of Dwelling Units in Building (Multifamily Only)' in occupancy:
-            units = et.SubElement(facility, 'SpatialUnits')
+            units = createSubElement(building, 'SpatialUnits')
             addel('SpatialUnitType', units, 'Apartment units')
             addel('NumberOfUnits', units, str(occupancy['Number of Dwelling Units in Building (Multifamily Only)']))
 
     easymap(allbuilding, 'Conditioned Floors Above grade',
-            'ConditionedFloorsAboveGrade', facility, f=str)
+            'ConditionedFloorsAboveGrade', building, f=str)
     easymap(allbuilding, 'Conditioned Floors Below grade',
-            'ConditionedFloorsBelowGrade', facility, f=str)
+            'ConditionedFloorsBelowGrade', building, f=str)
     easymap(allbuilding, 'Building automation system? (Y/N)',
-            'BuildingAutomationSystem', facility, yn2tf)
+            'BuildingAutomationSystem', building, yn2tf)
     easymap(allbuilding, 'Historical landmark status? (Y/N)',
-            'HistoricalLandmark', facility, yn2tf)
+            'HistoricalLandmark', building, yn2tf)
     # Map to FloorAreas
-    floorareas = et.Element('FloorAreas')
+    floorareas = createElement('FloorAreas')
     if 'Total conditioned area' in allbuilding:
-        floorarea = et.SubElement(floorareas, 'FloorArea')
+        floorarea = createSubElement(floorareas, 'FloorArea')
         addel('FloorAreaType', floorarea, 'Conditioned')
         addel('FloorAreaValue', floorarea, allbuilding['Total conditioned area'])
     if 'Gross floor area' in allbuilding:
-        floorarea = et.SubElement(floorareas, 'FloorArea')
+        floorarea = createSubElement(floorareas, 'FloorArea')
         addel('FloorAreaType', floorarea, 'Gross')
         addel('FloorAreaValue', floorarea, allbuilding['Gross floor area'])
     if 'Conditioned area (heated only)' in allbuilding:
-        floorarea = et.SubElement(floorareas, 'FloorArea')
+        floorarea = createSubElement(floorareas, 'FloorArea')
         addel('FloorAreaType', floorarea, 'Cooled only')
         addel('FloorAreaValue', floorarea, allbuilding['Conditioned area (heated only)'])
     if 'Conditioned area (cooled only)' in allbuilding:
-        floorarea = et.SubElement(floorareas, 'FloorArea')
+        floorarea = createSubElement(floorareas, 'FloorArea')
         addel('FloorAreaType', floorarea, 'Heated only')
         addel('FloorAreaValue', floorarea, allbuilding['Conditioned area (cooled only)'])
     # Map Space Function table to FloorAreas
     if 'Space Function' in allbuilding:
         for key, value in allbuilding['Space Function'].items():
-            floorarea = et.SubElement(floorareas, 'FloorArea')
+            floorarea = createSubElement(floorareas, 'FloorArea')
             addel('FloorAreaType', floorarea, 'Custom')
             addel('FloorAreaCustomName', floorarea, key)
             addel('FloorAreaValue', floorarea, value)
 
     easymap(allbuilding, 'Year of construction*',
-            'YearOfConstruction', facility, f=str)
+            'YearOfConstruction', building, f=str)
 
     easymap(allbuilding, 'Year of Prior Energy Audit',
-            'YearOfLastEnergyAudit', facility, f=str)
+            'YearOfLastEnergyAudit', building, f=str)
 
     easymap(allbuilding, 'Last Renovation*',
-            'YearOfLastMajorRemodel', facility, f=str)
+            'YearOfLastMajorRemodel', building, f=str)
     #
     # All - Space Functions
     #
-    # subsections = et.Element('Subsections')
+    # subsections = createElement('Subsections')
     spaces = []
     phvac = {}
     nohvac = []
     for key, value in spacefunctions.items():
-        element = et.Element('Space')
+        element = createElement('Space')
         # First the stuff that has a slot to go into
         addel('PremisesName', element, key)
         if 'Number of Occupants' in value:
-            levels = et.SubElement(element, 'OccupancyLevels')
-            level = et.SubElement(levels, 'OccupancyLevel')
+            levels = createSubElement(element, 'OccupancyLevels')
+            level = createSubElement(levels, 'OccupancyLevel')
             addel('OccupantQuantity', level,
                   str(value['Number of Occupants']))
-        typicalocc = et.Element('TypicalOccupantUsages')
+        typicalocc = createElement('TypicalOccupantUsages')
         if 'Use (hours/week)' in value:
-            occ = et.SubElement(typicalocc, 'TypicalOccupantUsage')
+            occ = createSubElement(typicalocc, 'TypicalOccupantUsage')
             addel('TypicalOccupantUsageValue', occ,
                   str(value['Use (hours/week)']))
             addel('TypicalOccupantUsageUnits', occ, 'Hours per week')
         if 'Use (weeks/year)' in value:
-            occ = et.SubElement(typicalocc, 'TypicalOccupantUsage')
+            occ = createSubElement(typicalocc, 'TypicalOccupantUsage')
             addel('TypicalOccupantUsageValue', occ,
                   str(value['Use (weeks/year)']))
             addel('TypicalOccupantUsageUnits', occ, 'Weeks per year')
         if len(typicalocc) > 0:
             element.append(typicalocc)
         if 'Gross Floor Area' in value:
-            floorareas = et.SubElement(element, 'FloorAreas')
-            floorarea = et.SubElement(floorareas, 'FloorArea')
+            floorareas = createSubElement(element, 'FloorAreas')
+            floorarea = createSubElement(floorareas, 'FloorArea')
             addel('FloorAreaType', floorarea, 'Gross')
             addel('FloorAreaValue', floorarea, str(value['Gross Floor Area']))
         # Now for the UDFs
@@ -1779,8 +1791,8 @@ def map_to_buildingsync(obj, groupspaces=False):
 
     # Map the building shape if it is given
     if 'General Building Shape*' in envelope:
-        subsections = et.SubElement(facility, 'Subsections')
-        subsection = et.SubElement(subsections, 'Subsection')
+        subsections = createSubElement(building, 'Subsections')
+        subsection = createSubElement(subsections, 'Subsection')
         addel('FootprintShape', subsection, envelope['General Building Shape*'])
 
     hvacsystems = None
@@ -1796,20 +1808,21 @@ def map_to_buildingsync(obj, groupspaces=False):
 
     # L2 - HVAC, make one system to represent all of it.
     if len(hvac) > 0:
-        hvacsystem = et.Element('HVACSystem')
+        hvacsystem = createElement('HVACSystem')
         # Plant stuff
         if 'Boiler Type' in hvac:
-            el = et.SubElement(hvacsystem, 'Plants')
-            el = et.SubElement(el, 'HeatingPlant')
-            el = et.SubElement(el, 'Boiler')
+            el = createSubElement(hvacsystem, 'Plants')
+            el = createSubElement(el, 'HeatingPlant')
+            el = createSubElement(el, 'Boiler')
             for val in hvac['Boiler Type']:
                 addudf(el, 'ASHRAE Std 211 Boiler Type', val)
         # HeatingAndCoolingSystems
-        hacsys = el = et.Element('HeatingAndCoolingSystems')
+        hvacsys = el = createElement('HeatingAndCoolingSystems')
         stuff = ['Heating Source', 'Heating Fuel']
         # Heating Source related info
         if any([el in hvac for el in stuff]):
-            el = et.SubElement(hacsys, 'HeatingSource')
+            el = createSubElement(hvacsys, 'HeatingSources')
+            el = createSubElement(el, 'HeatingSource')
             for tag in stuff:
                 if tag in hvac:
                     for val in hvac[tag]:
@@ -1817,13 +1830,14 @@ def map_to_buildingsync(obj, groupspaces=False):
         stuff = ['Cooling Source', 'Chiller Input', 'Compressor', 'Condenser']
         # Cooling Source related info
         if any([el in hvac for el in stuff]):
-            el = et.SubElement(hacsys, 'CoolingSource')
+            el = createSubElement(hvacsys, 'CoolingSources')
+            el = createSubElement(el, 'CoolingSource')
             for tag in stuff:
                 if tag in hvac:
                     for val in hvac[tag]:
                         addudf(el, 'ASHRAE Std 211 %s' % tag, val)
-        if len(hacsys) > 0:
-            hvacsystem.append(hacsys)
+        if len(hvacsys) > 0:
+            hvacsystem.append(hvacsys)
 
         # Tags with nowhere to go
         stuff = ['Zone Controls', 'Central Plant Controls', 'Heat Recovery', 'Outside Air',
@@ -1835,13 +1849,13 @@ def map_to_buildingsync(obj, groupspaces=False):
 
         if len(hvacsystem) > 0:
             hvacsystem.attrib['ID'] = 'Std211L2HVAC'
-            hvacsystems = et.Element('HVACSystems')
+            hvacsystems = createElement('HVACSystems')
             hvacsystems.append(hvacsystem)
 
         stuff = ['SHW/DHW Source', 'SHW/DHW Fuel']
         if any([el in hvac for el in stuff]):
-            dhwsystems = et.Element('DomesticHotWaterSystems')
-            dhw = et.SubElement(dhwsystems, 'DomesticHotWaterSystem')
+            dhwsystems = createElement('DomesticHotWaterSystems')
+            dhw = createSubElement(dhwsystems, 'DomesticHotWaterSystem')
             dhw.attrib['ID'] = 'Std211L2HVACDHW'
             for tag in stuff:
                 if tag in hvac:
@@ -1852,12 +1866,12 @@ def map_to_buildingsync(obj, groupspaces=False):
         systems = map_equipment_inventory(inventory)
         if systems['HVACSystem']:
             if not hvacsystems:
-                hvacsystems = et.Element('HVACSystems')
+                hvacsystems = createElement('HVACSystems')
             for system in systems['HVACSystem']:
                 hvacsystems.append(system)
         if systems['HeatRecoverySystem']:
             if not heatrecoverysystems:
-                heatrecoverysystems = et.Element('HeatRecoverySystems')
+                heatrecoverysystems = createElement('HeatRecoverySystems')
             for system in systems['HeatRecoverySystem']:
                 heatrecoverysystems.append(system)
 
@@ -1866,7 +1880,7 @@ def map_to_buildingsync(obj, groupspaces=False):
         num = 1
         sources = []
         for src_type, src in lighting_plug_loads['Lighting Source Type(s)'].items():
-            source = et.Element('LightingSystem')
+            source = createElement('LightingSystem')
             source.attrib['ID'] = 'LightingSystem%d' % num
             num += 1
             source.append(bsxml_lighting_system_lookup(src_type))
@@ -1880,7 +1894,7 @@ def map_to_buildingsync(obj, groupspaces=False):
             easymapudf(src, 'Approx % Area Served', 'ASHRAE Std 211 Approx % Area Served', source, str)
             sources.append(source)
         if len(sources) > 0:
-            lightingsystems = et.Element('LightingSystems')
+            lightingsystems = createElement('LightingSystems')
             for src in sources:
                 lightingsystems.append(src)
 
@@ -1889,12 +1903,12 @@ def map_to_buildingsync(obj, groupspaces=False):
         num = 1
         loads = []
         for ld_type, ld in lighting_plug_loads['Major Process/Plug Load Type(s)**'].items():
-            load = et.Element('PlugLoad')
+            load = createElement('PlugLoad')
             addudf(load, 'ASHRAE Std 211 Major Process/Plug Load Type(s)', ld_type)
             easymapudf(ld, 'Key Operational Details***', 'ASHRAE Std 211 Key Operational Details', load)
             loads.append(load)
         if len(loads) > 0:
-            plugloads = et.Element('PlugLoads')
+            plugloads = createElement('PlugLoads')
             for load in loads:
                 plugloads.append(load)
 
@@ -1908,18 +1922,18 @@ def map_to_buildingsync(obj, groupspaces=False):
             'Fenestration Seal Condition' in envelope):
         # Something is there to put in sides, make what we need
         if subsection is None:
-            subsections = et.SubElement(facility, 'Subsections')
-            subsection = et.SubElement(subsections, 'Subsection')
-        sides = et.SubElement(subsection, 'Sides')
-        side = et.SubElement(sides, 'Side')
+            subsections = createSubElement(building, 'Subsections')
+            subsection = createSubElement(subsections, 'Subsection')
+        sides = createSubElement(subsection, 'Sides')
+        side = createSubElement(sides, 'Side')
         # Make a wall system if needed
         wallsystem = None
         if ('Total exposed above grade wall area (sq ft)' in envelope or
                 'Total exposed above grade wall area R value' in envelope or
                 'Glazing area, approx % of exposed wall area [10, 25, 50, 75, 90, 100]*' in envelope or
                 'Wall Constructions' in envelope):
-            wallsystems = et.Element('WallSystems')
-            wallsystem = et.SubElement(wallsystems, 'WallSystem')
+            wallsystems = createElement('WallSystems')
+            wallsystem = createSubElement(wallsystems, 'WallSystem')
             wallsystem.attrib['ID'] = 'Wall1'
             easymap(envelope, 'Total exposed above grade wall area R value',
                     'WallRValue', wallsystem, f=str)
@@ -1929,8 +1943,8 @@ def map_to_buildingsync(obj, groupspaces=False):
         fenestrationsystem = None
         if ('Fenestration Frame Types' in envelope or
                 'Fenestration Glass Types' in envelope):
-            fenestrationsystems = et.Element('FenestrationSystems')
-            fenestrationsystem = et.SubElement(fenestrationsystems, 'FenestrationSystem')
+            fenestrationsystems = createElement('FenestrationSystems')
+            fenestrationsystem = createSubElement(fenestrationsystems, 'FenestrationSystem')
             fenestrationsystem.attrib['ID'] = 'Fenestration1'
             easymapudf(envelope, 'Fenestration Frame Types',
                        'ASHRAE Standard 211 Fenestration Frame Types',
@@ -1946,13 +1960,13 @@ def map_to_buildingsync(obj, groupspaces=False):
                        fenestrationsystem)
         # Fill in the side information
         if wallsystem is not None:
-            wallid = et.SubElement(side, 'WallID')
+            wallid = createSubElement(side, 'WallID')
             wallid.attrib['IDref'] = wallsystem.attrib['ID']
             if 'Total exposed above grade wall area (sq ft)' in envelope:
                 addel('WallArea', wallid,
                       str(envelope['Total exposed above grade wall area (sq ft)']))
         if fenestrationsystem is not None:
-            windowid = et.SubElement(side, 'WindowID')
+            windowid = createSubElement(side, 'WindowID')
             windowid.attrib['IDref'] = fenestrationsystem.attrib['ID']
             if 'Glazing area, approx % of exposed wall area [10, 25, 50, 75, 90, 100]*' in envelope:
                 addel('WindowToWallRatio', windowid,
@@ -1963,8 +1977,8 @@ def map_to_buildingsync(obj, groupspaces=False):
             'Cool Roof (Y/N)' in envelope or
             'Roof condition' in envelope or
             'Roof Construction' in envelope):
-        roofsystems = et.Element('RoofSystems')
-        roofsystem = et.SubElement(roofsystems, 'RoofSystem')
+        roofsystems = createElement('RoofSystems')
+        roofsystem = createSubElement(roofsystems, 'RoofSystem')
         roofsystem.attrib['ID'] = 'Roof1'
         easymap(envelope, 'Roof area R value', 'RoofRValue',
                 roofsystem, f=str)
@@ -1975,7 +1989,7 @@ def map_to_buildingsync(obj, groupspaces=False):
         easymapudf(envelope, 'Roof Construction',
                    'ASHRAE Standard 211 Roof Construction',
                    roofsystem, f=lambda x: ', '.join(x))
-        roofid = et.SubElement(subsection, 'RoofID')
+        roofid = createSubElement(subsection, 'RoofID')
         roofid.attrib['IDref'] = roofsystem.attrib['ID']
         easymap(envelope, 'Roof area (sq ft)', 'RoofArea', roofid, f=str)
 
@@ -1989,20 +2003,20 @@ def map_to_buildingsync(obj, groupspaces=False):
             if 'Wood frame' in envelope['Floor Construction']:
                 value.append('Wood frame')
             value = ', '.join(value)
-            ceilingsystems = et.Element('CeilingSystems')
-            ceilingsystem = et.SubElement(ceilingsystems, 'CeilingSystem')
+            ceilingsystems = createElement('CeilingSystems')
+            ceilingsystem = createSubElement(ceilingsystems, 'CeilingSystem')
             ceilingsystem.attrib['ID'] = 'Ceiling1'
             addudf(ceilingsystem, 'ASHRAE Standard 211 Floor Construction',
                    str(value))
-            ceilingid = et.SubElement(subsection, 'CeilingID')
+            ceilingid = createSubElement(subsection, 'CeilingID')
             ceilingid.attrib['IDref'] = ceilingsystem.attrib['ID']
 
     # Foundation systems
     foundationsystem = None
     if ('Foundation Type' in envelope or
             'Floor Construction' in envelope):
-        foundationsystems = et.Element('FoundationSystems')
-        foundationsystem = et.SubElement(foundationsystems, 'FoundationSystem')
+        foundationsystems = createElement('FoundationSystems')
+        foundationsystem = createSubElement(foundationsystems, 'FoundationSystem')
         foundationsystem.attrib['ID'] = 'Foundation1'
         easymapudf(envelope, 'Foundation Type',
                    'ASHRAE Standard 211 Foundation Type',
@@ -2010,11 +2024,11 @@ def map_to_buildingsync(obj, groupspaces=False):
         easymapudf(envelope, 'Floor Construction',
                    'ASHRAE Standard 211 Floor Construction',
                    foundationsystem, f=lambda x: ', '.join(x))
-        foundationid = et.SubElement(subsection, 'FoundationID')
+        foundationid = createSubElement(subsection, 'FoundationID')
         foundationid.attrib['IDref'] = foundationsystem.attrib['ID']
 
     # Map the UDFs from L2 - Envelope
-    udfs = et.Element('UserDefinedFields')
+    udfs = createElement('UserDefinedFields')
     appendudf(udfs, 'Below grade wall area (sq ft)', envelope, prefix='ASHRAE Standard 211 ')
     appendudf(udfs, 'Below grade wall area (sq m)', envelope, prefix='ASHRAE Standard 211 ')
     appendudf(udfs, 'Overall Enclosure Tightness Assessment', envelope, prefix='ASHRAE Standard 211 ')
@@ -2028,67 +2042,67 @@ def map_to_buildingsync(obj, groupspaces=False):
 
     if len(udfs) > 0:
         if subsection is None:
-            subsections = et.SubElement(facility, 'Subsections')
-            subsection = et.SubElement(subsections, 'Subsection')
+            subsections = createSubElement(building, 'Subsections')
+            subsection = createSubElement(subsections, 'Subsection')
         subsection.append(udfs)
 
     thermalzones = []
     if len(spaces) > 0:
         if groupspaces:
             # Group spaces by the principle HVAC type
-            thermalzones = et.Element('ThermalZones')
+            thermalzones = createElement('ThermalZones')
             for phvactype, spcs in phvac.items():
-                tz = et.SubElement(thermalzones, 'ThermalZone')
-                tzspaces = et.SubElement(tz, 'Spaces')
+                tz = createSubElement(thermalzones, 'ThermalZone')
+                tzspaces = createSubElement(tz, 'Spaces')
                 for space in spcs:
                     tzspaces.append(space)
             # Anything with nothing gets its own zone
             for space in nohvac:
-                tz = et.Element('ThermalZone')
-                tzspaces = et.SubElement(tz, 'Spaces')
+                tz = createElement('ThermalZone')
+                tzspaces = createSubElement(tz, 'Spaces')
                 tzspaces.append(space)
         else:
             # Every space gets its own thermal zone
-            thermalzones = et.Element('ThermalZones')
+            thermalzones = createElement('ThermalZones')
             for space in spaces:
-                tz = et.SubElement(thermalzones, 'ThermalZone')
-                tzspaces = et.SubElement(tz, 'Spaces')
+                tz = createSubElement(thermalzones, 'ThermalZone')
+                tzspaces = createSubElement(tz, 'Spaces')
                 tzspaces.append(space)
     if len(thermalzones) > 0:
         if subsection is None:
-            subsections = et.SubElement(facility, 'Subsections')
-            subsection = et.SubElement(subsections, 'Subsection')
+            subsections = createSubElement(building, 'Subsections')
+            subsection = createSubElement(subsections, 'Subsection')
         subsection.append(thermalzones)
 
     # Now for the UDFs from All - Building
     easymapudf(allbuilding, 'Primary Building use type*',
-               'ASHRAE Standard 211 Primary Building Use Type', facility)
+               'ASHRAE Standard 211 Primary Building Use Type', building)
     easymapudf(allbuilding, 'Year Last Commissioned',
-               'ASHRAE Standard 211 Year Last Commissioned', facility, f=str)
+               'ASHRAE Standard 211 Year Last Commissioned', building, f=str)
     easymapudf(allbuilding, 'Percent owned (%)',
-               'ASHRAE Standard 211 Percent Owned', facility, f=repercentage)
+               'ASHRAE Standard 211 Percent Owned', building, f=repercentage)
     easymapudf(allbuilding, 'Percent leased (%)',
-               'ASHRAE Standard 211 Percent Leased', facility, f=repercentage)
+               'ASHRAE Standard 211 Percent Leased', building, f=repercentage)
     easymapudf(allbuilding, 'Total Number of Floors',
-               'ASHRAE Standard 211 Total Number of Floors', facility, f=str)
+               'ASHRAE Standard 211 Total Number of Floors', building, f=str)
     if 'Excluded Spaces' in allbuilding:
         allbuilding['Excluded Spaces'] = ', '.join(allbuilding['Excluded Spaces'])
     easymapudf(allbuilding, 'Excluded Spaces',
-               'ASHRAE Standard 211 Excluded Spaces', facility)
+               'ASHRAE Standard 211 Excluded Spaces', building)
 
     if 'Occupancy' in allbuilding:
         easymapudf(allbuilding['Occupancy'],
                    '% of Dwelling Units currently Occupied (Multifamily Only)',
                    'ASHRAE Standard 211 Percent Dwelling Units Currently Occupied',
-                   facility, f=repercentage)
+                   building, f=repercentage)
 
-    # Wrap up for facility
-    if len(facility) == 0:
-        facility = None
-        facilities = None
+    # Wrap up for building
+    if len(building) == 0:
+        building = None
+        buildings = None
 
     # Map energy sources, metered energy, and delivered energy to a report
-    report = et.Element('Report')
+    report = createElement('Report')
     scenario = None
     resources = None
 
@@ -2097,11 +2111,11 @@ def map_to_buildingsync(obj, groupspaces=False):
             or 'Utility #2' in metered_energy
             or 'Utility #3' in metered_energy
             or delivered_energy != {}):
-        scenarios = et.SubElement(report, 'Scenarios')
-        scenario = et.SubElement(scenarios, 'Scenario')
+        scenarios = createSubElement(report, 'Scenarios')
+        scenario = createSubElement(scenarios, 'Scenario')
         scenario.attrib['ID'] = 'ASHRAEStandard211Scenario'
         addel('ScenarioName', scenario, 'ASHRAE Standard 211 Scenario')
-        resources = et.SubElement(scenario, 'ResourceUses')
+        resources = createSubElement(scenario, 'ResourceUses')
 
     #
     # Map the energy sources from 'All - Building', does this need to be
@@ -2109,12 +2123,12 @@ def map_to_buildingsync(obj, groupspaces=False):
     #
     if 'Energy Sources' in allbuilding:
         for el in allbuilding['Energy Sources']:
-            resource = et.Element('ResourceUse')
+            resource = createElement('ResourceUse')
             # Nope, enum fail on both
             # easymap(el, 'Energy Source', 'EnergyResource', resource)
             # if 'Type' in el:
-            #    sub = et.SubElement(resource, 'Utility')
-            #    sub = et.SubElement(sub, 'MeteringConfiguration')
+            #    sub = createSubElement(resource, 'Utility')
+            #    sub = createSubElement(sub, 'MeteringConfiguration')
             #    sub.text = el['Type']
             easymapudf(el, 'Energy Source', 'ASHRAE Standard 211 Energy Source',
                        resource)
@@ -2128,7 +2142,7 @@ def map_to_buildingsync(obj, groupspaces=False):
     # Add resource uses for metered and delivered energy
     for name in ['Utility #1', 'Utility #2', 'Utility #3']:
         if name in metered_energy:
-            resource = et.Element('ResourceUse')
+            resource = createElement('ResourceUse')
             resource.attrib['ID'] = 'Std211ResourceUse' + name.replace(' #', '')
             if metered_energy[name]['Definition']['Units'].startswith("=INDEX('Drop Down Lists'!"):
                 # Use default
@@ -2138,33 +2152,34 @@ def map_to_buildingsync(obj, groupspaces=False):
                 metered_energy[name]['Definition']['kBtu/unit'] = str(
                     conversion_to_kBtu[metered_energy[name]['Definition']['Units']])
             if metered_energy[name]['Type'] in metered_energy_type_lookup:
-                el = et.SubElement(resource, 'EnergyResource')
+                el = createSubElement(resource, 'EnergyResource')
                 el.text = metered_energy_type_lookup[metered_energy[name]['Type']]
             else:
-                el = et.SubElement(resource, 'EnergyResource')
+                el = createSubElement(resource, 'EnergyResource')
                 el.text = 'Other'
                 easymapudf(metered_energy[name], 'Type',
                            'ASHRAE Standard 211 Energy Source', resource)
-            el = et.SubElement(resource, 'ResourceUnits')
+            el = createSubElement(resource, 'ResourceUnits')
             el.text = metered_energy_bsxml_units[metered_energy[name]['Type']]
-            el = et.SubElement(resource, 'UtilityID')
+            el = createSubElement(resource, 'UtilityIDs')
+            el = createSubElement(el, 'UtilityID')
             el.attrib['IDref'] = 'Std211Metered' + name.replace(' #', '')
             easymapudf(metered_energy[name]['Definition'], 'kBtu/unit', 'ASHRAE Standard 211 kBtu/unit', resource)
             resources.append(resource)
 
     if delivered_energy:
-        resource = et.Element('ResourceUse')
+        resource = createElement('ResourceUse')
         resource.attrib['ID'] = 'Std211ResourceUseDelivered1'
         if delivered_energy['Definition']['Conversion to kBTU'].startswith("=IFERROR(INDEX("):
             # Use default
             delivered_energy['Definition']['Conversion to kBTU'] = str(
                 conversion_to_kBtu[delivered_energy['Definition']['Units']])
-        el = et.SubElement(resource, 'EnergyResource')
+        el = createSubElement(resource, 'EnergyResource')
         fueltype = delivered_energy['Definition']['Delivered Energy Type (if applicable)']
         if fueltype == 'Oil':
             fueltype = 'Fuel oil'
         el.text = fueltype
-        el = et.SubElement(resource, 'ResourceUnits')
+        el = createSubElement(resource, 'ResourceUnits')
         el.text = bsxml_unit_lookup[delivered_energy['Definition']['Units']]
         easymapudf(delivered_energy['Definition'], 'Conversion to kBTU', 'ASHRAE Standard 211 Conversion to kBTU',
                    resource)
@@ -2195,20 +2210,20 @@ def map_to_buildingsync(obj, groupspaces=False):
                     # Compute the frequency, we don't handle 'Unknown'
                     frequency = determine_frequency(start, end)
                     for inkey, outkey in keys[name].items():
-                        ts = et.Element('TimeSeries')
-                        el = et.SubElement(ts, 'ReadingType')
+                        ts = createElement('TimeSeries')
+                        el = createSubElement(ts, 'ReadingType')
                         el.text = reading_type[inkey]
-                        el = et.SubElement(ts, 'TimeSeriesReadingQuantity')
+                        el = createSubElement(ts, 'TimeSeriesReadingQuantity')
                         el.text = outkey
-                        el = et.SubElement(ts, 'StartTimeStamp')
+                        el = createSubElement(ts, 'StartTimeStamp')
                         el.text = start.strftime('%Y-%m-%dT00:00:00')
-                        el = et.SubElement(ts, 'EndTimeStamp')
+                        el = createSubElement(ts, 'EndTimeStamp')
                         el.text = end.strftime('%Y-%m-%dT00:00:00')
-                        el = et.SubElement(ts, 'IntervalFrequency')
+                        el = createSubElement(ts, 'IntervalFrequency')
                         el.text = frequency
-                        el = et.SubElement(ts, 'IntervalReading')
+                        el = createSubElement(ts, 'IntervalReading')
                         el.text = str(pt[inkey])
-                        el = et.SubElement(ts, 'ResourceUseID')
+                        el = createSubElement(ts, 'ResourceUseID')
                         el.attrib['IDref'] = refname
                         datapoints.append(ts)
 
@@ -2218,43 +2233,43 @@ def map_to_buildingsync(obj, groupspaces=False):
             for pt in delivered_energy['Data']:
                 start = pt['Delivery date']
                 for inkey, outkey in {'Volume': 'Other', 'Cost': 'Currency'}.items():
-                    ts = et.Element('TimeSeries')
-                    el = et.SubElement(ts, 'ReadingType')
+                    ts = createElement('TimeSeries')
+                    el = createSubElement(ts, 'ReadingType')
                     el.text = 'Total'
-                    el = et.SubElement(ts, 'TimeSeriesReadingQuantity')
+                    el = createSubElement(ts, 'TimeSeriesReadingQuantity')
                     el.text = outkey
-                    el = et.SubElement(ts, 'StartTimeStamp')
+                    el = createSubElement(ts, 'StartTimeStamp')
                     el.text = start.strftime('%Y-%m-%dT00:00:00')
-                    el = et.SubElement(ts, 'IntervalReading')
+                    el = createSubElement(ts, 'IntervalReading')
                     el.text = str(pt[inkey])
-                    el = et.SubElement(ts, 'ResourceUseID')
+                    el = createSubElement(ts, 'ResourceUseID')
                     el.attrib['IDref'] = refname
                     datapoints.append(ts)
 
     if len(datapoints) > 0:
-        ts = et.SubElement(scenario, 'TimeSeriesData')
+        ts = createSubElement(scenario, 'TimeSeriesData')
         for pt in datapoints:
             ts.append(pt)
 
-    if len(scenario) > 0 and (facility is not None):
-        link = et.SubElement(scenario, 'LinkedPremises')
-        el = et.SubElement(link, 'Facility')
-        el = et.SubElement(el, 'LinkedFacilityID')
-        el.attrib['IDref'] = facility.attrib['ID']
+    if len(scenario) > 0 and (building is not None):
+        link = createSubElement(scenario, 'LinkedPremises')
+        el = createSubElement(link, 'Building')
+        el = createSubElement(el, 'LinkedBuildingID')
+        el.attrib['IDref'] = building.attrib['ID']
 
     # Add the utility items
-    utilities = et.Element('Utilities')
+    utilities = createElement('Utilities')
     for name in ['Utility #1', 'Utility #2', 'Utility #3']:
         if name in metered_energy:
-            el = et.SubElement(utilities, 'Utility')
+            el = createSubElement(utilities, 'Utility')
             el.attrib['ID'] = 'Std211Metered' + name.replace(' #', '')
-            el = et.SubElement(el, 'UtilityName')
+            el = createSubElement(el, 'UtilityName')
             el.text = name
     if len(utilities) > 0:
         report.append(utilities)
 
     if auditor is not None:
-        el = et.SubElement(report, 'AuditorContactID')
+        el = createSubElement(report, 'AuditorContactID')
         el.attrib['IDref'] = auditor.attrib['ID']
 
     easymapudf(allbuilding, 'Date of site visit(s)',
@@ -2274,44 +2289,44 @@ def map_to_buildingsync(obj, groupspaces=False):
               'Typical ROI',
               'Priority']
     # First the low cost items
-    measures = et.Element('Measures')
+    measures = createElement('Measures')
     if 'Low-Cost and No-Cost Recommendations' in summary:
         for key, value in summary['Low-Cost and No-Cost Recommendations'].items():
-            measure = et.SubElement(measures, 'Measure')
-            el = et.SubElement(measure, 'LongDescription')
+            measure = createSubElement(measures, 'Measure')
+            el = createSubElement(measure, 'LongDescription')
             el.text = key
-            udfs = et.SubElement(measure, 'UserDefinedFields')
+            udfs = createSubElement(measure, 'UserDefinedFields')
             for field in fields:
                 if field in value:
-                    udf = et.SubElement(udfs, 'UserDefinedField')
-                    udfname = et.SubElement(udf, 'FieldName')
+                    udf = createSubElement(udfs, 'UserDefinedField')
+                    udfname = createSubElement(udf, 'FieldName')
                     udfname.text = field
-                    udfvalue = et.SubElement(udf, 'FieldValue')
+                    udfvalue = createSubElement(udf, 'FieldValue')
                     udfvalue.text = value[field]
-            udf = et.SubElement(udfs, 'UserDefinedField')
-            udfname = et.SubElement(udf, 'FieldName')
+            udf = createSubElement(udfs, 'UserDefinedField')
+            udfname = createSubElement(udf, 'FieldName')
             udfname.text = 'ASHRAE Standard 211 L1 Measure Category'
-            udfvalue = et.SubElement(udf, 'FieldValue')
+            udfvalue = createSubElement(udf, 'FieldValue')
             udfvalue.text = 'Low-Cost and No-Cost Recommendations'
     # Change that one thing...
     fields[1] = 'Impact on Occupant Comfort'
     if 'Potential Capital Recommendations' in summary:
         for key, value in summary['Potential Capital Recommendations'].items():
-            measure = et.SubElement(measures, 'Measure')
-            el = et.SubElement(measure, 'LongDescription')
+            measure = createSubElement(measures, 'Measure')
+            el = createSubElement(measure, 'LongDescription')
             el.text = key
-            udfs = et.SubElement(measure, 'UserDefinedFields')
+            udfs = createSubElement(measure, 'UserDefinedFields')
             for field in fields:
                 if field in value:
-                    udf = et.SubElement(udfs, 'UserDefinedField')
-                    udfname = et.SubElement(udf, 'FieldName')
+                    udf = createSubElement(udfs, 'UserDefinedField')
+                    udfname = createSubElement(udf, 'FieldName')
                     udfname.text = field
-                    udfvalue = et.SubElement(udf, 'FieldValue')
+                    udfvalue = createSubElement(udf, 'FieldValue')
                     udfvalue.text = value[field]
-            udf = et.SubElement(udfs, 'UserDefinedField')
-            udfname = et.SubElement(udf, 'FieldName')
+            udf = createSubElement(udfs, 'UserDefinedField')
+            udfname = createSubElement(udf, 'FieldName')
             udfname.text = 'ASHRAE Standard 211 L2 Measure Category'
-            udfvalue = et.SubElement(udf, 'FieldValue')
+            udfvalue = createSubElement(udf, 'FieldValue')
             udfvalue.text = 'Potential Capital Recommendations'
 
     #
@@ -2330,12 +2345,12 @@ def map_to_buildingsync(obj, groupspaces=False):
         utility_units.append(delivered_energy['Definition']['Units'])
     for category, eems in summary_L2.items():
         for key, value in eems.items():
-            measure = et.SubElement(measures, 'Measure')
-            el = et.SubElement(measure, 'LongDescription')
+            measure = createSubElement(measures, 'Measure')
+            el = createSubElement(measure, 'LongDescription')
             el.text = key
-            measure_savings = et.Element('MeasureSavingsAnalysis')
+            measure_savings = createElement('MeasureSavingsAnalysis')
 
-            annual_by_fuels = et.Element('AnnualSavingsByFuels')
+            annual_by_fuels = createElement('AnnualSavingsByFuels')
             utilnum = 1
             for util_units, util_type in zip(utility_units, utility_types):
                 if utilnum == 4:
@@ -2345,12 +2360,12 @@ def map_to_buildingsync(obj, groupspaces=False):
                 utilnum += 1
                 if header in value:
                     if value[header]:
-                        savings = et.SubElement(annual_by_fuels, 'AnnualSavingsByFuel')
-                        el = et.SubElement(savings, 'EnergyResource')
+                        savings = createSubElement(annual_by_fuels, 'AnnualSavingsByFuel')
+                        el = createSubElement(savings, 'EnergyResource')
                         el.text = metered_energy_type_lookup[util_type]
-                        el = et.SubElement(savings, 'ResourceUnits')
+                        el = createSubElement(savings, 'ResourceUnits')
                         el.text = bsxml_unit_lookup[util_units]
-                        el = et.SubElement(savings, 'AnnualSavingsNativeUnits')
+                        el = createSubElement(savings, 'AnnualSavingsNativeUnits')
                         el.text = str(value[header])
 
             if len(annual_by_fuels) > 0:
@@ -2364,53 +2379,60 @@ def map_to_buildingsync(obj, groupspaces=False):
             easymap(value, 'Measure Life (years)', 'UsefulLife', measure, str)
             easymap(value, 'Measure Cost', 'MeasureTotalFirstCost', measure, str)
 
-            udfs = et.SubElement(measure, 'UserDefinedFields')
+            udfs = createSubElement(measure, 'UserDefinedFields')
             for field in udf_fields:
                 if field in value:
                     if value[field]:
-                        udf = et.SubElement(udfs, 'UserDefinedField')
-                        udfname = et.SubElement(udf, 'FieldName')
+                        udf = createSubElement(udfs, 'UserDefinedField')
+                        udfname = createSubElement(udf, 'FieldName')
                         udfname.text = 'ASHRAE Std 211 ' + field
-                        udfvalue = et.SubElement(udf, 'FieldValue')
+                        udfvalue = createSubElement(udf, 'FieldValue')
                         udfvalue.text = value[field]
-            udf = et.SubElement(udfs, 'UserDefinedField')
-            udfname = et.SubElement(udf, 'FieldName')
+            udf = createSubElement(udfs, 'UserDefinedField')
+            udfname = createSubElement(udf, 'FieldName')
             udfname.text = 'ASHRAE Standard 211 L2 Measure Category'
-            udfvalue = et.SubElement(udf, 'FieldValue')
+            udfvalue = createSubElement(udf, 'FieldValue')
             udfvalue.text = category
 
     #
     # Assemble the final result
     #
+    root_ns = et.QName("http://buildingsync.net/schemas/bedes-auc/2019", "BuildingSync")
     attr_qname = et.QName("http://www.w3.org/2001/XMLSchema-instance", "schemaLocation")
-    nsmap = {None: "http://nrel.gov/schemas/bedes-auc/2014",
+    nsmap = {None: "http://buildingsync.net/schemas/bedes-auc/2019",
              'xsi': "http://www.w3.org/2001/XMLSchema-instance"}
-    bsxml = et.Element('Audits',
-                       {attr_qname: "http://nrel.gov/schemas/bedes-auc/2014 ../BuildingSync.xsd"},
+    bsxml = et.Element(root_ns,
+                       {attr_qname: "http://buildingsync.net/schemas/bedes-auc/2019 ../BuildingSync.xsd"},
                        nsmap=nsmap)
     # The following five lines are the original ElementTree version
     # bsxml = et.Element('Audits')
     # bsxml.attrib['xmlns'] = "http://nrel.gov/schemas/bedes-auc/2014"
     # bsxml.attrib['xmlns:xsi'] = "http://www.w3.org/2001/XMLSchema-instance"
     # bsxml.attrib['xsi:schemaLocation'] = "http://nrel.gov/schemas/bedes-auc/2014 ../BuildingSync.xsd"
-    audit = et.SubElement(bsxml, 'Audit')
+
     # First is Sites
-    if (address is not None) or (keycontact is not None) or (facilities is not None):
-        sites = et.SubElement(audit, 'Sites')
-        site = et.SubElement(sites, 'Site')
+    facilities = None
+    if (address is not None) or (keycontact is not None) or (buildings is not None):
+        facilities = createSubElement(bsxml, 'Facilities')
+        facility = createSubElement(facilities, 'Facility')
+        sites = createSubElement(facility, 'Sites')
+        site = createSubElement(sites, 'Site')
         if address is not None:
             site.append(address)
         if keycontact is not None:
-            pcid = et.SubElement(site, 'PrimaryContactID')
+            pcid = createSubElement(site, 'PrimaryContactID')
             pcid.text = keycontact.attrib['ID']
-        if facilities is not None:
-            site.append(facilities)
+        if buildings is not None:
+            site.append(buildings)
     # Second is Systems
     if ((hvacsystems is not None) or (lightingsystems is not None) or (dhwsystems is not None)
             or (heatrecoverysystems is not None) or (wallsystems is not None) or (roofsystems is not None)
             or (ceilingsystems is not None) or (fenestrationsystems is not None) or (foundationsystems is not None)
             or (plugloads is not None)):
-        systems = et.SubElement(audit, 'Systems')
+        if facilities is None:
+            facilities = createSubElement(bsxml, 'Facilities')
+            facility = createSubElement(facilities, 'Facility')
+        systems = createSubElement(facility, 'Systems')
         if hvacsystems is not None:
             systems.append(hvacsystems)
         if lightingsystems is not None:
@@ -2433,13 +2455,22 @@ def map_to_buildingsync(obj, groupspaces=False):
             systems.append(plugloads)
     # Next is Measures
     if measures is not None:
-        audit.append(measures)
+        if facilities is None:
+            facilities = createSubElement(bsxml, 'Facilities')
+            facility = createSubElement(facilities, 'Facility')
+        facility.append(measures)
     # Now Reports
     if report is not None:
-        audit.append(report)
+        if facilities is None:
+            facilities = createSubElement(bsxml, 'Facilities')
+            facility = createSubElement(facilities, 'Facility')
+        facility.append(report)
     # Last is Contacts
     if contacts is not None:
-        audit.append(contacts)
+        if facilities is None:
+            facilities = createSubElement(bsxml, 'Facilities')
+            facility = createSubElement(facilities, 'Facility')
+        facility.append(contacts)
     # Done!  
     return bsxml
 
@@ -2453,7 +2484,7 @@ def map_std211_xlsx_to_string(filename, verbose=False, groupspaces=False):
         warnings.simplefilter("ignore")
         wb = loadxl.load_workbook(filename)
         warnings.simplefilter("default")
-    std211 = read_std211_xls(wb)
+    std211 = read_std211_xlsx(wb)
     bsxml = map_to_buildingsync(std211, groupspaces=groupspaces)
     return '<?xml version="1.0" encoding="UTF-8"?>' + et.tostring(bsxml, encoding='utf-8').decode('utf-8')
 
@@ -2467,7 +2498,7 @@ def map_std211_xlsx_to_prettystring(filename, verbose=False, groupspaces=False):
         warnings.simplefilter("ignore")
         wb = loadxl.load_workbook(filename)
         warnings.simplefilter("default")
-    std211 = read_std211_xls(wb)
+    std211 = read_std211_xlsx(wb)
     bsxml = map_to_buildingsync(std211, groupspaces=groupspaces)
     return prettystring(bsxml).decode('utf-8')
 
@@ -2499,7 +2530,7 @@ if __name__ == '__main__':
         wb = loadxl.load_workbook(args.infile)
         warnings.simplefilter("default")
 
-    std211 = read_std211_xls(wb)
+    std211 = read_std211_xlsx(wb)
     bsxml = map_to_buildingsync(std211, groupspaces=args.group)
     if args.verbose:
         print(prettystring(bsxml).decode('utf-8'))
