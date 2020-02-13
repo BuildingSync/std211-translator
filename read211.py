@@ -299,7 +299,7 @@ def getlabeledvalues(worksheet, cellrange, labelcolor=0, IP=True,
     if not hasunits:
         for row in worksheet.iter_rows(min_row=minrow, min_col=labelcol,
                                        max_col=valuecol, max_row=maxrow):
-            if row[0].value != None and row[-1].value != None:
+            if row[0].value is not None and row[-1].value is not None:
                 if variablelength:
                     if (row[0].fill.start_color.index != labelcolor or
                             row[-1].fill.start_color.index != valuecolor):
@@ -308,12 +308,12 @@ def getlabeledvalues(worksheet, cellrange, labelcolor=0, IP=True,
     else:
         for row in worksheet.iter_rows(min_row=minrow, min_col=labelcol,
                                        max_col=valuecol + 1, max_row=maxrow):
-            if row[0].value != None and row[-2].value != None:
+            if row[0].value is not None and row[-2].value is not None:
                 if variablelength:
                     if (row[0].fill.start_color.index != labelcolor or
                             row[-2].fill.start_color.index != valuecolor):
                         break
-                if row[-1].value != None:
+                if row[-1].value is not None:
                     # Handle the units, this could get ugly
                     units = row[-1].value
 
@@ -398,7 +398,7 @@ def getinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
                 if keepemptycells:
                     data = dict(zip(labels[1:], data))
                 else:
-                    data = dict([el for el in zip(labels[1:], data) if el[1] != None])
+                    data = dict([el for el in zip(labels[1:], data) if el[1] is not None])
             result[row[0].value] = data
     else:
         listrow = rangetuple[1]
@@ -423,7 +423,7 @@ def getinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
                 if keepemptycells:
                     data = dict(zip(labels[1:], data))
                 else:
-                    data = dict([el for el in zip(labels[1:], data) if el[1] != None])
+                    data = dict([el for el in zip(labels[1:], data) if el[1] is not None])
             result[col[0].value] = data
     return result
 
@@ -525,7 +525,7 @@ def getlistinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
                 # Have to handle None in the labels
                 out = {}
                 for i in range(len(labels)):
-                    if labels[i] == None or data[i] == None:
+                    if labels[i] is None or data[i] is None:
                         continue
                     out[labels[i]] = data[i]
                 data = out
@@ -554,7 +554,7 @@ def getlistinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
                 # Have to handle None in the labels
                 out = {}
                 for i in range(len(labels)):
-                    if labels[i] == None or data[i] == None:
+                    if labels[i] is None or data[i] is None:
                         continue
                     out[labels[i]] = data[i]
                 data = out
@@ -629,7 +629,7 @@ def scan_for_cell_value(worksheet, mincol=None, minrow=None, maxcol=None,
 
 def read_all_building(worksheet):
     '''Read the 'All - Building' sheet
-    
+
     The first several items are fixed in size and location, but
     the "Space Function" table looks to be expandable. Everything
     after that needs to be found.
@@ -1506,7 +1506,7 @@ def map_equipment_inventory(inventory):
              'Condition       (excellent, good, average, poor)']
 
     for name, data in inventory.items():
-        if not 'Type' in data:
+        if 'Type' not in data:
             # Could try something else here, but skip for now
             continue
         if data['Type'] == 'Heating Plant Type':
@@ -1608,7 +1608,7 @@ def map_to_buildingsync(obj, groupspaces=False):
     :return: BuildingSync XML object (lxml.etree.ElemenTree)
 
     Map a dictionary of Standard 211 data, as extracted using the read_std211_xlsx
-    function, into an XML object. 
+    function, into an XML object.
     """
     #
     allbuilding = obj['All - Building']
@@ -1905,7 +1905,7 @@ def map_to_buildingsync(obj, groupspaces=False):
             source.append(bsxml_lighting_system_lookup(src_type))
             easyremap(src, 'Ballast Type(s)', 'BallastType', source, bsxml_ballast_lookup)
             control = bsxml_lighting_control_lookup(src['Control(s)'])
-            if control == None:
+            if control is None:
                 easymapudf(src, 'Control(s)', 'ASHRAE Std 211 Lighting Control', source)
             else:
                 source.append(control)
@@ -2490,7 +2490,7 @@ def map_to_buildingsync(obj, groupspaces=False):
             facilities = createSubElement(bsxml, 'Facilities')
             facility = createSubElement(facilities, 'Facility')
         facility.append(contacts)
-    # Done!  
+    # Done!
     return bsxml
 
 
