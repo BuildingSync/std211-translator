@@ -1172,6 +1172,7 @@ def read_std211_xlsx(workbook, IP=True):
     the additional code in the loadxl module is needed to pull out all data. Use of vanilla openpyxl may not result in
     all information being read out.
     '''
+
     std211 = {}
     #
     # Read the 'All - Building' sheet
