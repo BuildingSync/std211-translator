@@ -1,4 +1,4 @@
-# BuildingSync(R), Copyright (c) 2015-2018, Alliance for Sustainable Energy, LLC.
+# BuildingSync(R), Copyright (c) 2015-2020, Alliance for Sustainable Energy, LLC.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
@@ -55,7 +55,7 @@ from xml.dom import minidom
 # 9) Unit conversions, particularly for metered and delivered energy, are too complicated
 
 # This table could be read from the spreadsheet
-metered_energy_bsxml_units = {'Electricity': 'kWh',
+metered_energy_bsync_units = {'Electricity': 'kWh',
                               'Natural Gas': 'therms',
                               'Purchased Steam': 'lbs',
                               'Purchased Hot Water': 'MMBtu',
@@ -96,7 +96,7 @@ delivered_energy_default_units = {'Oil': 'Gallons',
                                   'Coal': 'Mass ton',
                                   'Other': 'kWh'}
 
-bsxml_ballast_lookup = {'Electronic': 'Electronic',
+bsync_ballast_lookup = {'Electronic': 'Electronic',
                         'Magnetic': 'Electromagnetic',
                         'N/A': 'No Ballast',
                         'Other': 'Other'}
@@ -129,7 +129,7 @@ conversion_to_kBtu = {'kWh': 3.412,
                       'gallons (Propane)': 92,
                       'cubic feet (Propane)': 2.516}
 
-bsxml_unit_lookup = {'kWh': 'kWh',
+bsync_unit_lookup = {'kWh': 'kWh',
                      'MWh': 'MWh',
                      'MMBtu': 'MMBtu',
                      'therms': 'therms',
@@ -299,7 +299,7 @@ def getlabeledvalues(worksheet, cellrange, labelcolor=0, IP=True,
     if not hasunits:
         for row in worksheet.iter_rows(min_row=minrow, min_col=labelcol,
                                        max_col=valuecol, max_row=maxrow):
-            if row[0].value != None and row[-1].value != None:
+            if row[0].value is not None and row[-1].value is not None:
                 if variablelength:
                     if (row[0].fill.start_color.index != labelcolor or
                             row[-1].fill.start_color.index != valuecolor):
@@ -308,12 +308,12 @@ def getlabeledvalues(worksheet, cellrange, labelcolor=0, IP=True,
     else:
         for row in worksheet.iter_rows(min_row=minrow, min_col=labelcol,
                                        max_col=valuecol + 1, max_row=maxrow):
-            if row[0].value != None and row[-2].value != None:
+            if row[0].value is not None and row[-2].value is not None:
                 if variablelength:
                     if (row[0].fill.start_color.index != labelcolor or
                             row[-2].fill.start_color.index != valuecolor):
                         break
-                if row[-1].value != None:
+                if row[-1].value is not None:
                     # Handle the units, this could get ugly
                     units = row[-1].value
 
@@ -398,7 +398,7 @@ def getinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
                 if keepemptycells:
                     data = dict(zip(labels[1:], data))
                 else:
-                    data = dict([el for el in zip(labels[1:], data) if el[1] != None])
+                    data = dict([el for el in zip(labels[1:], data) if el[1] is not None])
             result[row[0].value] = data
     else:
         listrow = rangetuple[1]
@@ -423,7 +423,7 @@ def getinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
                 if keepemptycells:
                     data = dict(zip(labels[1:], data))
                 else:
-                    data = dict([el for el in zip(labels[1:], data) if el[1] != None])
+                    data = dict([el for el in zip(labels[1:], data) if el[1] is not None])
             result[col[0].value] = data
     return result
 
@@ -525,7 +525,7 @@ def getlistinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
                 # Have to handle None in the labels
                 out = {}
                 for i in range(len(labels)):
-                    if labels[i] == None or data[i] == None:
+                    if labels[i] is None or data[i] is None:
                         continue
                     out[labels[i]] = data[i]
                 data = out
@@ -554,7 +554,7 @@ def getlistinfo(worksheet, cellrange, variablelength=False, fillcolor=8,
                 # Have to handle None in the labels
                 out = {}
                 for i in range(len(labels)):
-                    if labels[i] == None or data[i] == None:
+                    if labels[i] is None or data[i] is None:
                         continue
                     out[labels[i]] = data[i]
                 data = out
@@ -629,7 +629,7 @@ def scan_for_cell_value(worksheet, mincol=None, minrow=None, maxcol=None,
 
 def read_all_building(worksheet):
     '''Read the 'All - Building' sheet
-    
+
     The first several items are fixed in size and location, but
     the "Space Function" table looks to be expandable. Everything
     after that needs to be found.
@@ -1162,7 +1162,17 @@ def read_L2_eem_summary(worksheet):
 
 
 def read_std211_xlsx(workbook, IP=True):
-    ''' Read Standard 211 information from an Excel workbook into a dictionary '''
+    '''Read Standard 211 information from an Excel workbook into a dictionary.
+
+    :param workbook: Excel workbook object from openpyxl/loadxl
+    :param IP: Boolean determining unit handling, True uses IP units (Defaults to True)
+    :return: dictionary object containing data
+
+    Pull data from a spreadsheet object and populate a dictionary. Due to the use of checkboxes in a number of sheets,
+    the additional code in the loadxl module is needed to pull out all data. Use of vanilla openpyxl may not result in
+    all information being read out.
+    '''
+
     std211 = {}
     #
     # Read the 'All - Building' sheet
@@ -1330,7 +1340,7 @@ def createElement(name):
     return et.Element(et.QName("http://buildingsync.net/schemas/bedes-auc/2019", name))
 
 
-def bsxml_lighting_system_lookup(src_type):
+def bsync_lighting_system_lookup(src_type):
     lamp_type = createElement('LampType')
     if src_type == 'CFL':
         createSubElement(lamp_type, 'CompactFluorescent')
@@ -1371,7 +1381,7 @@ def bsxml_lighting_system_lookup(src_type):
     return lamp_type
 
 
-def bsxml_lighting_control_lookup(control_type):
+def bsync_lighting_control_lookup(control_type):
     control = None
     if control_type == 'Manual':
         control = createElement('LightingControlTypeManual')
@@ -1452,14 +1462,14 @@ def repercentage(s):
     return str(s * 100) + '%'
 
 
-def bsxml_condition_lookup(condition):
+def bsync_condition_lookup(condition):
     return {'excellent': 'Excellent',
             'good': 'Good',
             'average': 'Average',
             'poor': 'Poor'}.get(condition.lower(), 'Other')
 
 
-def bsxml_capacity_units_lookup(units):
+def bsync_capacity_units_lookup(units):
     return {"cfh": "cfh",
             "ft3/min": "ft3/min",
             "cfm": "ft3/min",
@@ -1496,7 +1506,7 @@ def map_equipment_inventory(inventory):
              'Condition       (excellent, good, average, poor)']
 
     for name, data in inventory.items():
-        if not 'Type' in data:
+        if 'Type' not in data:
             # Could try something else here, but skip for now
             continue
         if data['Type'] == 'Heating Plant Type':
@@ -1505,7 +1515,7 @@ def map_equipment_inventory(inventory):
             el = createSubElement(system, 'Plants')
             el = createSubElement(el, 'HeatingPlant')
             easymap(data, 'Condition       (excellent, good, average, poor)', 'HeatingPlantCondition', el,
-                    bsxml_condition_lookup)
+                    bsync_condition_lookup)
             items = ['Description', 'Location', 'Units', 'Rated efficiency (as applicable)',
                      'Output Capacity', 'Area Served', 'Approx Year Installed']
             for item in items:
@@ -1517,7 +1527,7 @@ def map_equipment_inventory(inventory):
             el = createSubElement(system, 'Plants')
             el = createSubElement(el, 'CoolingPlant')
             easymap(data, 'Condition       (excellent, good, average, poor)', 'CoolingPlantCondition', el,
-                    bsxml_condition_lookup)
+                    bsync_condition_lookup)
             items = ['Description', 'Location', 'Units', 'Rated efficiency (as applicable)',
                      'Output Capacity', 'Area Served', 'Approx Year Installed']
             for item in items:
@@ -1531,11 +1541,11 @@ def map_equipment_inventory(inventory):
             el = createSubElement(hp, 'Boiler')
 
             easymap(data, 'Output Capacity', 'OutputCapacity', el, str)
-            easymap(data, 'Units', 'CapacityUnits', el, bsxml_capacity_units_lookup)
+            easymap(data, 'Units', 'CapacityUnits', el, bsync_capacity_units_lookup)
             easymap(data, 'Rated efficiency (as applicable)', 'ThermalEfficiency', el, str)
 
             easymap(data, 'Condition       (excellent, good, average, poor)', 'HeatingPlantCondition', hp,
-                    bsxml_condition_lookup)
+                    bsync_condition_lookup)
             items = ['Description', 'Location', 'Area Served', 'Approx Year Installed']
             for item in items:
                 easymapudf(data, item, 'ASHRAE Std 211 %s' % item, system, str)
@@ -1548,7 +1558,7 @@ def map_equipment_inventory(inventory):
             el = createSubElement(el, 'Delivery')
 
             easymap(data, 'Output Capacity', 'Capacity', el, str)
-            easymap(data, 'Units', 'CapacityUnits', el, bsxml_capacity_units_lookup)
+            easymap(data, 'Units', 'CapacityUnits', el, bsync_capacity_units_lookup)
             easymap(data, 'Approx Year Installed', 'YearInstalled', el, str)
 
             addudf(system, 'ASHRAE Std 211 Type', typestring)
@@ -1579,7 +1589,7 @@ def map_equipment_inventory(inventory):
             createSubElement(el, 'DX')
 
             easymap(data, 'Output Capacity', 'Capacity', cs, str)
-            easymap(data, 'Units', 'CapacityUnits', cs, bsxml_capacity_units_lookup)
+            easymap(data, 'Units', 'CapacityUnits', cs, bsync_capacity_units_lookup)
             easymap(data, 'Approx Year Installed', 'YearInstalled', cs, str)
 
             items = ['Description', 'Location', 'Rated efficiency (as applicable)',
@@ -1591,6 +1601,15 @@ def map_equipment_inventory(inventory):
 
 
 def map_to_buildingsync(obj, groupspaces=False):
+    """Map a dictionary of Standard 211 data into the BuildingSync XML object.
+
+    :param obj: dictionary of Standard 211 data
+    :param groupspaces: Boolean determining if spaces should be combined by HVAC type (defaults to False)
+    :return: BuildingSync XML object (lxml.etree.ElemenTree)
+
+    Map a dictionary of Standard 211 data, as extracted using the read_std211_xlsx
+    function, into an XML object.
+    """
     #
     allbuilding = obj['All - Building']
     spacefunctions = obj['All - Space Functions']
@@ -1883,10 +1902,10 @@ def map_to_buildingsync(obj, groupspaces=False):
             source = createElement('LightingSystem')
             source.attrib['ID'] = 'LightingSystem%d' % num
             num += 1
-            source.append(bsxml_lighting_system_lookup(src_type))
-            easyremap(src, 'Ballast Type(s)', 'BallastType', source, bsxml_ballast_lookup)
-            control = bsxml_lighting_control_lookup(src['Control(s)'])
-            if control == None:
+            source.append(bsync_lighting_system_lookup(src_type))
+            easyremap(src, 'Ballast Type(s)', 'BallastType', source, bsync_ballast_lookup)
+            control = bsync_lighting_control_lookup(src['Control(s)'])
+            if control is None:
                 easymapudf(src, 'Control(s)', 'ASHRAE Std 211 Lighting Control', source)
             else:
                 source.append(control)
@@ -2160,7 +2179,7 @@ def map_to_buildingsync(obj, groupspaces=False):
                 easymapudf(metered_energy[name], 'Type',
                            'ASHRAE Standard 211 Energy Source', resource)
             el = createSubElement(resource, 'ResourceUnits')
-            el.text = metered_energy_bsxml_units[metered_energy[name]['Type']]
+            el.text = metered_energy_bsync_units[metered_energy[name]['Type']]
             el = createSubElement(resource, 'UtilityIDs')
             el = createSubElement(el, 'UtilityID')
             el.attrib['IDref'] = 'Std211Metered' + name.replace(' #', '')
@@ -2180,7 +2199,7 @@ def map_to_buildingsync(obj, groupspaces=False):
             fueltype = 'Fuel oil'
         el.text = fueltype
         el = createSubElement(resource, 'ResourceUnits')
-        el.text = bsxml_unit_lookup[delivered_energy['Definition']['Units']]
+        el.text = bsync_unit_lookup[delivered_energy['Definition']['Units']]
         easymapudf(delivered_energy['Definition'], 'Conversion to kBTU', 'ASHRAE Standard 211 Conversion to kBTU',
                    resource)
         if 'Estimated Annual Use**' in delivered_energy['Definition']:
@@ -2364,7 +2383,7 @@ def map_to_buildingsync(obj, groupspaces=False):
                         el = createSubElement(savings, 'EnergyResource')
                         el.text = metered_energy_type_lookup[util_type]
                         el = createSubElement(savings, 'ResourceUnits')
-                        el.text = bsxml_unit_lookup[util_units]
+                        el.text = bsync_unit_lookup[util_units]
                         el = createSubElement(savings, 'AnnualSavingsNativeUnits')
                         el.text = str(value[header])
 
@@ -2401,19 +2420,19 @@ def map_to_buildingsync(obj, groupspaces=False):
     attr_qname = et.QName("http://www.w3.org/2001/XMLSchema-instance", "schemaLocation")
     nsmap = {None: "http://buildingsync.net/schemas/bedes-auc/2019",
              'xsi': "http://www.w3.org/2001/XMLSchema-instance"}
-    bsxml = et.Element(root_ns,
-                       {attr_qname: "http://buildingsync.net/schemas/bedes-auc/2019 ../BuildingSync.xsd"},
+    bsync = et.Element(root_ns,
+                       {attr_qname: "http://buildingsync.net/schemas/bedes-auc/2019 https://github.com/BuildingSync/schema/releases/download/v1.0/BuildingSync.xsd"},
                        nsmap=nsmap)
     # The following five lines are the original ElementTree version
-    # bsxml = et.Element('Audits')
-    # bsxml.attrib['xmlns'] = "http://nrel.gov/schemas/bedes-auc/2014"
-    # bsxml.attrib['xmlns:xsi'] = "http://www.w3.org/2001/XMLSchema-instance"
-    # bsxml.attrib['xsi:schemaLocation'] = "http://nrel.gov/schemas/bedes-auc/2014 ../BuildingSync.xsd"
+    # bsync = et.Element('Audits')
+    # bsync.attrib['xmlns'] = "http://nrel.gov/schemas/bedes-auc/2014"
+    # bsync.attrib['xmlns:xsi'] = "http://www.w3.org/2001/XMLSchema-instance"
+    # bsync.attrib['xsi:schemaLocation'] = "http://nrel.gov/schemas/bedes-auc/2014 ../BuildingSync.xsd"
 
     # First is Sites
     facilities = None
     if (address is not None) or (keycontact is not None) or (buildings is not None):
-        facilities = createSubElement(bsxml, 'Facilities')
+        facilities = createSubElement(bsync, 'Facilities')
         facility = createSubElement(facilities, 'Facility')
         sites = createSubElement(facility, 'Sites')
         site = createSubElement(sites, 'Site')
@@ -2430,7 +2449,7 @@ def map_to_buildingsync(obj, groupspaces=False):
             or (ceilingsystems is not None) or (fenestrationsystems is not None) or (foundationsystems is not None)
             or (plugloads is not None)):
         if facilities is None:
-            facilities = createSubElement(bsxml, 'Facilities')
+            facilities = createSubElement(bsync, 'Facilities')
             facility = createSubElement(facilities, 'Facility')
         systems = createSubElement(facility, 'Systems')
         if hvacsystems is not None:
@@ -2456,26 +2475,33 @@ def map_to_buildingsync(obj, groupspaces=False):
     # Next is Measures
     if measures is not None:
         if facilities is None:
-            facilities = createSubElement(bsxml, 'Facilities')
+            facilities = createSubElement(bsync, 'Facilities')
             facility = createSubElement(facilities, 'Facility')
         facility.append(measures)
     # Now Reports
     if report is not None:
         if facilities is None:
-            facilities = createSubElement(bsxml, 'Facilities')
+            facilities = createSubElement(bsync, 'Facilities')
             facility = createSubElement(facilities, 'Facility')
         facility.append(report)
     # Last is Contacts
     if contacts is not None:
         if facilities is None:
-            facilities = createSubElement(bsxml, 'Facilities')
+            facilities = createSubElement(bsync, 'Facilities')
             facility = createSubElement(facilities, 'Facility')
         facility.append(contacts)
-    # Done!  
-    return bsxml
+    # Done!
+    return bsync
 
 
 def map_std211_xlsx_to_string(filename, verbose=False, groupspaces=False):
+    """Map a spreadsheet file into BuildingSync XML string.
+
+    :param filename: name of input Excel file
+    :param verbose: Boolean flag controlling output during translation (defaults to False)
+    :param groupspaces: Boolean determining if spaces should be combined by HVAC type (defaults to False)
+    :return: BuildingSync XML as a string
+    """
     if not os.path.exists(filename):
         raise Exception('File "%s" does not exist' % filename)
     if verbose:
@@ -2485,11 +2511,18 @@ def map_std211_xlsx_to_string(filename, verbose=False, groupspaces=False):
         wb = loadxl.load_workbook(filename)
         warnings.simplefilter("default")
     std211 = read_std211_xlsx(wb)
-    bsxml = map_to_buildingsync(std211, groupspaces=groupspaces)
-    return '<?xml version="1.0" encoding="UTF-8"?>' + et.tostring(bsxml, encoding='utf-8').decode('utf-8')
+    bsync = map_to_buildingsync(std211, groupspaces=groupspaces)
+    return '<?xml version="1.0" encoding="UTF-8"?>' + et.tostring(bsync, encoding='utf-8').decode('utf-8')
 
 
 def map_std211_xlsx_to_prettystring(filename, verbose=False, groupspaces=False):
+    """Map a spreadsheet file into a pretty-printed BuildingSync XML string.
+
+        :param filename: name of input Excel file
+        :param verbose: Boolean flag controlling output during translation (defaults to False)
+        :param groupspaces: Boolean determining if spaces should be combined by HVAC type (defaults to False)
+        :return: BuildingSync XML as a pretty-printed string
+        """
     if not os.path.exists(filename):
         raise Exception('File "%s" does not exist' % filename)
     if verbose:
@@ -2499,25 +2532,29 @@ def map_std211_xlsx_to_prettystring(filename, verbose=False, groupspaces=False):
         wb = loadxl.load_workbook(filename)
         warnings.simplefilter("default")
     std211 = read_std211_xlsx(wb)
-    bsxml = map_to_buildingsync(std211, groupspaces=groupspaces)
-    return prettystring(bsxml).decode('utf-8')
+    bsync = map_to_buildingsync(std211, groupspaces=groupspaces)
+    return prettystring(bsync).decode('utf-8')
 
 
-if __name__ == '__main__':
+def argument_parser():
     import argparse
 
-    parser = argparse.ArgumentParser(description='Convert ASHRAE Std. 211 Workbook into BSXML.')
-    parser.add_argument('infile', metavar='INFILE')
+    parser = argparse.ArgumentParser(description='Translate an ASHRAE Std. 211 Workbook into BuildingSync XML.')
+    parser.add_argument('infile', metavar='INFILE', help='input Excel spreadsheet file name')
     parser.add_argument('-p', '--pretty', dest='pretty', action='store_true',
                         help='output pretty xml')
     parser.add_argument('-o', '--output', dest='outfile', action='store',
                         default='std211.xml',
-                        help='file to save BSXML output in')
+                        help='file to save BuildingSync XML output in')
     parser.add_argument('-g', '--groupspaces', dest='group', action='store_true',
                         help='group spaces into zones by principal HVAC type')
     parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
                         help='operate verbosely')
+    return parser
 
+
+if __name__ == '__main__':
+    parser = argument_parser()
     args = parser.parse_args()
 
     if not os.path.exists(args.infile):
@@ -2531,13 +2568,13 @@ if __name__ == '__main__':
         warnings.simplefilter("default")
 
     std211 = read_std211_xlsx(wb)
-    bsxml = map_to_buildingsync(std211, groupspaces=args.group)
+    bsync = map_to_buildingsync(std211, groupspaces=args.group)
     if args.verbose:
-        print(prettystring(bsxml).decode('utf-8'))
+        print(prettystring(bsync).decode('utf-8'))
     fp = open(args.outfile, 'w')
     if args.pretty:
-        fp.write(prettystring(bsxml).decode('utf-8'))
+        fp.write(prettystring(bsync).decode('utf-8'))
     else:
         fp.write('<?xml version="1.0" encoding="UTF-8"?>')
-        fp.write(et.tostring(bsxml, encoding='utf-8').decode('utf-8'))
+        fp.write(et.tostring(bsync, encoding='utf-8').decode('utf-8'))
     fp.close()

@@ -1,4 +1,4 @@
-# BuildingSync(R), Copyright (c) 2015-2018, Alliance for Sustainable Energy, LLC.
+# BuildingSync(R), Copyright (c) 2015-2020, Alliance for Sustainable Energy, LLC.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
@@ -41,16 +41,15 @@ import urllib.request
 from lxml import etree
 from io import BytesIO, StringIO
 
-remote_file = urllib.request.urlopen('https://raw.githubusercontent.com/BuildingSync/schema/develop/BuildingSync.xsd')
+# Test only version 1.0
+remote_file = urllib.request.urlopen('https://raw.githubusercontent.com/BuildingSync/schema/v1.0/BuildingSync.xsd')
 tree_data = remote_file.read()
 tree = etree.parse(BytesIO(tree_data))
 schema = etree.XMLSchema(tree)
 
-remote_file = urllib.request.urlopen('https://raw.githubusercontent.com/BuildingSync/schema/develop/examples/Golden%20Test%20File.xml')
+remote_file = urllib.request.urlopen('https://raw.githubusercontent.com/BuildingSync/schema/v1.0/examples/Golden%20Test%20File.xml')
 tree_data = remote_file.read()
 legit = etree.parse(BytesIO(tree_data))
-#legit = etree.parse('../bsxml/examples/Golden Test File.xml')
-#legit = etree.parse('Golden Test File.xml')
 
 
 def validate(filename, schema, instance):
@@ -74,21 +73,21 @@ class TestStd211Translation(unittest.TestCase):
             wb = loadxl.load_workbook(file)
             warnings.simplefilter("default")
             std211 = read211.read_std211_xlsx(wb)
-            bsxml = read211.map_to_buildingsync(std211)
-            # self.assertTrue(schema.validate(bsxml))
-            self.assertEqual(validate(file, schema, bsxml), '')
+            bsync = read211.map_to_buildingsync(std211)
+            # self.assertTrue(schema.validate(bsync))
+            self.assertEqual(validate(file, schema, bsync), '')
 
     def test_map_std211_xlsx_to_string(self):
         for file in test_files:
             txt = read211.map_std211_xlsx_to_string(file)
-            bsxml = etree.parse(BytesIO(txt.encode('utf-8')))
-            self.assertEqual(validate(file, schema, bsxml), '')
+            bsync = etree.parse(BytesIO(txt.encode('utf-8')))
+            self.assertEqual(validate(file, schema, bsync), '')
 
     def test_map_std211_xlsx_to_prettystring(self):
         for file in test_files:
             txt = read211.map_std211_xlsx_to_prettystring(file)
-            bsxml = etree.parse(BytesIO(txt.encode('utf-8')))
-            self.assertEqual(validate(file, schema, bsxml), '')
+            bsync = etree.parse(BytesIO(txt.encode('utf-8')))
+            self.assertEqual(validate(file, schema, bsync), '')
 
     def test_legit(self):
         self.assertTrue(schema.validate(legit))
@@ -96,4 +95,3 @@ class TestStd211Translation(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
