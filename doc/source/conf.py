@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('../../'))
 # -- Project information -----------------------------------------------------
 
 project = 'std211tobsync'
-copyright = '2015-2019, Alliance for Sustainable Energy, LLC.'
+copyright = '2015-2020, Alliance for Sustainable Energy, LLC.'
 author = 'Jason W. DeGraw'
 
 # The full version, including alpha/beta/rc tags
