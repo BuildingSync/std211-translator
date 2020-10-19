@@ -37,11 +37,14 @@ import openpyxl
 import loadxl
 import datetime
 import os
+from uuid import uuid4
 import warnings
 import calendar
 import lxml.etree as et
 # import xml.etree.ElementTree as et
 from xml.dom import minidom
+
+from xmlschema import XMLSchema
 
 # Known limitations:
 # 1) Some of the keys are not scrubbed for those asterisks
@@ -1600,6 +1603,21 @@ def map_equipment_inventory(inventory):
     return {'HVACSystem': hvacsystems, 'HeatRecoverySystem': heatrecoverysystems}
 
 
+def add_required_ids(bsync_root):
+    schema = XMLSchema("https://github.com/BuildingSync/schema/releases/download/v2.2.0/BuildingSync.xsd")
+    elements_requiring_ids = schema.findall("//*[@ID]")
+
+    for el in elements_requiring_ids:
+        # A nice method to return the full path to an element, so as to avoid
+        # finding elements such as auc:LinkedPremises/auc:Building
+        xp = "//" + el.get_path().replace(f"{{http://buildingsync.net/schemas/bedes-auc/2019}}", 'auc:')
+        elements_in_file = bsync_root.xpath(xp, namespaces={'auc': "http://buildingsync.net/schemas/bedes-auc/2019"})
+        for el2 in elements_in_file:
+            if 'ID' not in el2.attrib.keys():
+                el2.set('ID', f"{el.local_name}-{uuid4()}")
+
+    return bsync_root
+
 def map_to_buildingsync(obj, groupspaces=False):
     """Map a dictionary of Standard 211 data into the BuildingSync XML object.
 
@@ -2493,6 +2511,10 @@ def map_to_buildingsync(obj, groupspaces=False):
             facilities = createSubElement(bsync, 'Facilities')
             facility = createSubElement(facilities, 'Facility')
         facility.append(contacts)
+
+    # Lastly, generate IDs for those who require it
+    bsync = add_required_ids(bsync)
+
     # Done!
     return bsync
 
