@@ -2417,11 +2417,14 @@ def map_to_buildingsync(obj, groupspaces=False):
     # Assemble the final result
     #
     root_ns = et.QName("http://buildingsync.net/schemas/bedes-auc/2019", "BuildingSync")
-    attr_qname = et.QName("http://www.w3.org/2001/XMLSchema-instance", "schemaLocation")
-    nsmap = {None: "http://buildingsync.net/schemas/bedes-auc/2019",
+    attr_schemaLoc = et.QName("http://www.w3.org/2001/XMLSchema-instance", "schemaLocation")
+    nsmap = {'auc': "http://buildingsync.net/schemas/bedes-auc/2019",
              'xsi': "http://www.w3.org/2001/XMLSchema-instance"}
     bsync = et.Element(root_ns,
-                       {attr_qname: "http://buildingsync.net/schemas/bedes-auc/2019 https://github.com/BuildingSync/schema/releases/download/v1.0/BuildingSync.xsd"},
+                       {
+                           attr_schemaLoc: "http://buildingsync.net/schemas/bedes-auc/2019 https://github.com/BuildingSync/schema/releases/download/v2.2.0/BuildingSync.xsd",
+                           "version": "2.2.0"
+                        },
                        nsmap=nsmap)
     # The following five lines are the original ElementTree version
     # bsync = et.Element('Audits')
