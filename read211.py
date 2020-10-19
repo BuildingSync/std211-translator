@@ -1653,14 +1653,12 @@ def map_to_buildingsync(obj, groupspaces=False):
     easymap(allbuilding, 'State*', 'State', address)
     if 'Postal Code*' in allbuilding:
         postalcode = allbuilding['Postal Code*']
-        postalcode, plus4 = process_zip(postalcode)
-        postalcodeplus4 = postalcode
-        if plus4:
-            postalcodeplus4 += '-' + plus4
+        postalcode, postalcodeplus4 = process_zip(postalcode)
         el = createSubElement(address, 'PostalCode')
         el.text = postalcode
-        el = createSubElement(address, 'PostalCodePlus4')
-        el.text = postalcodeplus4
+        if postalcodeplus4 is not None:
+            el = createSubElement(address, 'PostalCodePlus4')
+            el.text = postalcodeplus4
     # street address, city, state, zip5, zip5-4
     if len(address) == 0:
         address = None
