@@ -1768,7 +1768,6 @@ def map_to_buildingsync(obj, groupspaces=False):
     #
     # All - Space Functions
     #
-    # subsections = createElement('Subsections')
     spaces = []
     phvac = {}
     nohvac = []
@@ -1821,14 +1820,14 @@ def map_to_buildingsync(obj, groupspaces=False):
         easymapudf(value, 'Principal Lighting Type',
                    'ASHRAE Standard 211 Principal Lighting Type', element, f=str)
         spaces.append(element)
-    subsections = []
-    subsection = None
+    sections = []
+    section = None
 
     # Map the building shape if it is given
     if 'General Building Shape*' in envelope:
-        subsections = createSubElement(building, 'Subsections')
-        subsection = createSubElement(subsections, 'Subsection')
-        addel('FootprintShape', subsection, envelope['General Building Shape*'])
+        sections = createSubElement(building, 'Sections')
+        section = createSubElement(sections, 'Section')
+        addel('FootprintShape', section, envelope['General Building Shape*'])
 
     hvacsystems = None
     lightingsystems = None
@@ -1956,10 +1955,10 @@ def map_to_buildingsync(obj, groupspaces=False):
             'Fenestration Glass Types' in envelope or
             'Fenestration Seal Condition' in envelope):
         # Something is there to put in sides, make what we need
-        if subsection is None:
-            subsections = createSubElement(building, 'Subsections')
-            subsection = createSubElement(subsections, 'Subsection')
-        sides = createSubElement(subsection, 'Sides')
+        if section is None:
+            sections = createSubElement(building, 'Sections')
+            section = createSubElement(sections, 'Section')
+        sides = createSubElement(section, 'Sides')
         side = createSubElement(sides, 'Side')
         # Make a wall system if needed
         wallsystem = None
@@ -2024,7 +2023,9 @@ def map_to_buildingsync(obj, groupspaces=False):
         easymapudf(envelope, 'Roof Construction',
                    'ASHRAE Standard 211 Roof Construction',
                    roofsystem, f=lambda x: ', '.join(x))
-        roofid = createSubElement(subsection, 'RoofID')
+        roofs = createSubElement(section, 'Roofs')
+        roof = createSubElement(roofs, 'Roof')
+        roofid = createSubElement(roof, 'RoofID')
         roofid.attrib['IDref'] = roofsystem.attrib['ID']
         easymap(envelope, 'Roof area (sq ft)', 'RoofArea', roofid, f=str)
 
@@ -2043,7 +2044,7 @@ def map_to_buildingsync(obj, groupspaces=False):
             ceilingsystem.attrib['ID'] = 'Ceiling1'
             addudf(ceilingsystem, 'ASHRAE Standard 211 Floor Construction',
                    str(value))
-            ceilingid = createSubElement(subsection, 'CeilingID')
+            ceilingid = createSubElement(section, 'CeilingID')
             ceilingid.attrib['IDref'] = ceilingsystem.attrib['ID']
 
     # Foundation systems
@@ -2059,7 +2060,9 @@ def map_to_buildingsync(obj, groupspaces=False):
         easymapudf(envelope, 'Floor Construction',
                    'ASHRAE Standard 211 Floor Construction',
                    foundationsystem, f=lambda x: ', '.join(x))
-        foundationid = createSubElement(subsection, 'FoundationID')
+        foundations = createSubElement(section, 'Foundations')
+        foundation = createSubElement(foundations, 'Foundation')
+        foundationid = createSubElement(foundation, 'FoundationID')
         foundationid.attrib['IDref'] = foundationsystem.attrib['ID']
 
     # Map the UDFs from L2 - Envelope
@@ -2076,10 +2079,10 @@ def map_to_buildingsync(obj, groupspaces=False):
     # appendudf(udfs, 'Fenestration Seal Condition', envelope, prefix = 'ASHRAE Standard 211 ')
 
     if len(udfs) > 0:
-        if subsection is None:
-            subsections = createSubElement(building, 'Subsections')
-            subsection = createSubElement(subsections, 'Subsection')
-        subsection.append(udfs)
+        if section is None:
+            sections = createSubElement(building, 'Sections')
+            section = createSubElement(sections, 'Section')
+        section.append(udfs)
 
     thermalzones = []
     if len(spaces) > 0:
@@ -2104,10 +2107,10 @@ def map_to_buildingsync(obj, groupspaces=False):
                 tzspaces = createSubElement(tz, 'Spaces')
                 tzspaces.append(space)
     if len(thermalzones) > 0:
-        if subsection is None:
-            subsections = createSubElement(building, 'Subsections')
-            subsection = createSubElement(subsections, 'Subsection')
-        subsection.append(thermalzones)
+        if section is None:
+            sections = createSubElement(building, 'Sections')
+            section = createSubElement(sections, 'Section')
+        section.append(thermalzones)
 
     # Now for the UDFs from All - Building
     easymapudf(allbuilding, 'Primary Building use type*',
@@ -2502,7 +2505,9 @@ def map_to_buildingsync(obj, groupspaces=False):
         if facilities is None:
             facilities = createSubElement(bsync, 'Facilities')
             facility = createSubElement(facilities, 'Facility')
-        facility.append(report)
+        reports = createElement('Reports')
+        reports.append(report)
+        facility.append(reports)
     # Last is Contacts
     if contacts is not None:
         if facilities is None:
